@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import SemiCircleProgressBar from "react-progressbar-semicircle";
 import Image from "next/image";
 
-const socket = io("http://localhost:5000");
+const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000");
 const audioFiles = {
     correct: "/audio/Correct.mp3",
     wrong: "/audio/Wrong.mp3",
