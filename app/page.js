@@ -619,24 +619,24 @@ export default function DisplayPage() {
                             Prize Money
                         </motion.h2>
                         <motion.div 
-                            className="border-4 border-yellow-300 rounded-lg p-6 bg-blue-900 max-w-md"
+                            className="border-4 border-yellow-300 rounded-lg p-6 bg-gradient-to-r from-[#03126F] via-[#053EAE] to-[#03126F] max-w-lg"
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3, duration: 0.7 }}
                         >
-                            <ul className="space-y-4">
+                            <div className="space-y-4">
                                 {["₹ 500", "₹ 400", "₹ 300", "₹ 200", "₹ 100", "₹ 50", "₹ 0", "₹ 0", "₹ 0", "₹ 0", "₹ 0"].map((amount, index) => (
-                                    <motion.li 
+                                    <motion.div 
                                         key={index}
-                                        className={index === 0 || index === 5 ? "bg-yellow-600 p-2 rounded" : ""}
+                                        className={`text-xl ${(index === 0 || index === 5 ? "bg-yellow-600 p-2 rounded" : "")}`}
                                         initial={{ opacity: 0, x: -20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: 0.4 + (index * 0.08) }}
                                     >
                                         {amount}
-                                    </motion.li>
+                                    </motion.div>
                                 ))}
-                            </ul>
+                            </div>
                         </motion.div>
                     </motion.div>
                 );
