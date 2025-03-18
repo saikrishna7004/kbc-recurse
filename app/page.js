@@ -53,6 +53,14 @@ export default function DisplayPage() {
     const lastUpdateTime = useRef(0);
 
     const [dashOffset, setDashOffset] = useState(100);
+    const [lifelineStatus, setLifelineStatus] = useState({
+        "50-50": false,
+        "Audience Poll": false,
+        "Phone a friend": false
+    });
+    const [hiddenOptions, setHiddenOptions] = useState([]);
+    const [activeLifeline, setActiveLifeline] = useState(null);
+    const [specificLifeline, setSpecificLifeline] = useState(null);
 
     const logoVariants = {
         hidden: { opacity: 0, scale: 0.7 },
@@ -214,6 +222,9 @@ export default function DisplayPage() {
                 maxTimer: 60,
                 showOptions: false
             });
+            setHiddenOptions([]);
+            setActiveLifeline(null);
+            setSpecificLifeline(null);
             stopAllAudio();
             setTimerFrozen(true);
             setShowOptions(false);
@@ -254,6 +265,22 @@ export default function DisplayPage() {
             setCurrentScreen(screen);
         });
 
+        socket.on("update-lifelines", (status) => {
+            setLifelineStatus(status);
+        });
+
+        socket.on("apply-5050", (optionsToHide) => {
+            setHiddenOptions(optionsToHide);
+        });
+
+        socket.on("set-active-lifeline", (lifeline) => {
+            setActiveLifeline(lifeline);
+        });
+
+        socket.on("show-specific-lifeline", (lifeline) => {
+            setSpecificLifeline(lifeline);
+        });
+
         return () => {
             socket.off("display-question");
             socket.off("show-options");
@@ -268,6 +295,10 @@ export default function DisplayPage() {
             socket.off("change-screen");
             socket.off("show-correct-answer");
             socket.off("reset-highlights");
+            socket.off("update-lifelines");
+            socket.off("apply-5050");
+            socket.off("set-active-lifeline");
+            socket.off("show-specific-lifeline");
             if (timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);
             }
@@ -379,12 +410,19 @@ export default function DisplayPage() {
         if (currentScreen === "question") {
             setTimeout(adjustFontSize, 100);
         }
+        setSpecificLifeline(null);
     }, [currentScreen]);
 
     useEffect(() => {
         const progress = ((timer.max - timer.current) / timer.max) * 100;
         setDashOffset(progress);
     }, [timer.current, timer.max]);
+
+    const handleOptionClick = (index) => {
+        if (!hiddenOptions.includes(index)) {
+            socket.emit("answer-selected", index);
+        }
+    };
 
     const renderScreen = () => {
         switch (currentScreen) {
@@ -441,7 +479,7 @@ export default function DisplayPage() {
                                 <AnimatePresence mode="wait">
                                     <motion.span 
                                         key={question.text} 
-                                        className="block w-full h-full flex items-center justify-center"
+                                        className="w-full h-full flex items-center justify-center"
                                         initial="initial"
                                         animate="animate"
                                         exit="exit"
@@ -465,20 +503,20 @@ export default function DisplayPage() {
                                 {question?.options?.map((option, index) => (
                                     <motion.div key={index} variants={optionItemVariants}>
                                         <div
-                                            onClick={() => socket.emit("answer-selected", index)}
+                                            onClick={() => handleOptionClick(index)}
                                             className={`border-4 relative z-10 h-[65px] border-yellow-300 rounded-full py-2 px-4 text-center md:text-lg text-sm content-center ${getBgColor(index)} overflow-hidden`}
                                         >
                                             <AnimatePresence mode="wait">
                                                 {showOptions && (
                                                     <motion.span 
                                                         key={`option-${index}-${option}`} 
-                                                        className="block w-full h-full flex items-center justify-center"
+                                                        className="w-full h-full flex items-center justify-center"
                                                         initial="initial"
                                                         animate="animate"
                                                         exit="exit"
                                                         variants={optionTextVariants}
                                                     >
-                                                        {option}
+                                                        {hiddenOptions.includes(index) ? "" : option}
                                                     </motion.span>
                                                 )}
                                             </AnimatePresence>
@@ -489,8 +527,8 @@ export default function DisplayPage() {
                                     !(question?.options?.length > 0) && [1, 2, 3, 4].map((option, index) => (
                                         <motion.div key={index} variants={optionItemVariants}>
                                             <div
-                                                onClick={() => socket.emit("answer-selected", index)}
-                                                className={`border-4 relative z-10 h-[52px] border-yellow-300 rounded-full py-2 px-4`}
+                                                onClick={() => handleOptionClick(index)}
+                                                className={`border-4 relative z-10 h-[52px] border-yellow-300 rounded-full py-2 px-4 ${hiddenOptions.includes(index) ? 'opacity-30' : 'cursor-pointer'}`}
                                             >
                                                 {showOptions ? option : ""}
                                             </div>
@@ -515,20 +553,52 @@ export default function DisplayPage() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.6 }}
                         >
-                            Lifelines
+                            {specificLifeline || "Lifelines"}
                         </motion.h2>
-                        <div className="flex gap-8">
-                            {Object.entries(icons).map(([key, icon], index) => {
-                                return <motion.div 
-                                    key={key} 
-                                    className="flex flex-col items-center justify-center"
+                        <div className="flex gap-8 relative">
+                            {specificLifeline ? (
+                                <motion.div 
+                                    className="flex flex-col items-center justify-center relative"
                                     initial={{ opacity: 0, scale: 0.8 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ delay: index * 0.2, duration: 0.5 }}
+                                    animate={{ opacity: 1, scale: 1.2 }}
+                                    transition={{ duration: 0.7 }}
                                 >
-                                    <Image className="w-32 h-auto" src={icon} width={100} height={100} alt={key} />
+                                    <Image 
+                                        className="w-64 h-auto" 
+                                        src={icons[specificLifeline]} 
+                                        width={200} 
+                                        height={200} 
+                                        alt={specificLifeline} 
+                                    />
+                                    <h3 className="text-xl font-bold text-yellow-300 mt-4">{specificLifeline}</h3>
                                 </motion.div>
-                            })}
+                            ) : (
+                                Object.entries(icons).map(([key, icon], index) => {
+                                    const isUsed = lifelineStatus[key];
+                                    
+                                    return (
+                                        <motion.div 
+                                            key={key} 
+                                            className="flex flex-col items-center justify-center relative"
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: index * 0.2, duration: 0.5 }}
+                                        >
+                                            <Image className="w-32 h-auto" src={icon} width={100} height={100} alt={key} />
+                                            {isUsed && (
+                                                <Image 
+                                                    className="w-32 h-32 absolute top-0 -mt-4" 
+                                                    src="/cross.png" 
+                                                    width={100} 
+                                                    height={100} 
+                                                    alt="Cross"
+                                                    style={{ opacity: 0.8 }}
+                                                />
+                                            )}
+                                        </motion.div>
+                                    );
+                                })
+                            )}
                         </div>
                     </motion.div>
                 );

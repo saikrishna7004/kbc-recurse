@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
+import Image from "next/image";
 
 const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
     extraHeaders: {
@@ -16,6 +17,14 @@ export default function AdminPage() {
     const [timerState, setTimerState] = useState("stopped");
     const [error, setError] = useState("");
     const [currentScreen, setCurrentScreen] = useState("logo");
+    const [lifelineStatus, setLifelineStatus] = useState({
+        "50-50": false,
+        "Audience Poll": false,
+        "Phone a friend": false
+    });
+    const [activeLifeline, setActiveLifeline] = useState(null);
+    const [fiftyFiftySelection, setFiftyFiftySelection] = useState([]);
+    const [hiddenOptions, setHiddenOptions] = useState([]);
 
     const audios = {
         correct: "Correct",
@@ -39,6 +48,12 @@ export default function AdminPage() {
         { id: "prize", name: "Prize Money" },
         { id: "blank", name: "Blank Screen" }
     ];
+
+    const icons = {
+        '50-50': '/50-50.png',
+        'Audience Poll': '/Audience Poll.png',
+        'Phone a friend': '/Phone A Friend.png',
+    };
 
     useEffect(() => {
         socket.on("current-timer", (data) => {
@@ -69,6 +84,25 @@ export default function AdminPage() {
             setCurrentScreen(screen);
         });
 
+        socket.on("update-lifelines", (status) => {
+            setLifelineStatus(status);
+        });
+
+        socket.on("set-active-lifeline", (lifeline) => {
+            setActiveLifeline(lifeline);
+            if (!lifeline) {
+                setFiftyFiftySelection([]);
+            }
+        });
+
+        socket.on("prepare-fifty-fifty", (availableOptions) => {
+            setFiftyFiftySelection([]);
+        });
+
+        socket.on("apply-5050", (optionsToHide) => {
+            setHiddenOptions(optionsToHide);
+        });
+
         const timerUpdateInterval = setInterval(() => {
             if (timerState === "running") {
                 socket.emit("get-timer");
@@ -83,6 +117,10 @@ export default function AdminPage() {
             socket.off("show-options");
             socket.off("timer-state");
             socket.off("change-screen");
+            socket.off("update-lifelines");
+            socket.off("set-active-lifeline");
+            socket.off("prepare-fifty-fifty");
+            socket.off("apply-5050");
             clearInterval(timerUpdateInterval);
         };
     }, [timerState]);
@@ -145,19 +183,93 @@ export default function AdminPage() {
 
     const isTimerChangeable = timerState === "stopped";
 
+    const handleLifeline = (lifeline) => {
+        if (!lifelineStatus[lifeline] && !activeLifeline) {
+            socket.emit("use-lifeline", lifeline);
+        }
+    };
+
+    const handleFiftyFiftyOption = (index) => {
+        if (activeLifeline === "50-50") {
+            if (fiftyFiftySelection.includes(index)) {
+                setFiftyFiftySelection(fiftyFiftySelection.filter(i => i !== index));
+            } else {
+                if (fiftyFiftySelection.length < 2) {
+                    setFiftyFiftySelection([...fiftyFiftySelection, index]);
+                }
+            }
+        }
+    };
+
+    const applyFiftyFifty = () => {
+        if (fiftyFiftySelection.length === 2) {
+            socket.emit("select-fifty-fifty-options", fiftyFiftySelection);
+        }
+    };
+
+    const cancelLifeline = () => {
+        socket.emit("cancel-lifeline");
+    };
+
+    const resetLifelines = () => {
+        socket.emit("reset-lifelines");
+    };
+
+    const isOptionDisabled = (index) => {
+        return hiddenOptions.includes(index);
+    };
+
     return (
         <div className="flex flex-col-reverse lg:flex-none">
             <div className="lg:absolute lg:right-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4">
-                <h2 className="text-lg font-bold mb-3">Screen Control</h2>
-                {screens.map(screen => (
+                <div className="flex flex-col">
+                    <h2 className="text-lg font-bold mb-3">Screen Control</h2>
+                    {screens.map(screen => (
+                        <button
+                            key={screen.id}
+                            className={`p-2 cursor-pointer ${currentScreen === screen.id ? 'bg-yellow-400 hover:bg-yellow-500 text-black' : 'bg-blue-800 hover:bg-blue-700'} transition-all`}
+                            onClick={() => handleScreenChange(screen.id)}
+                        >
+                            {screen.name}
+                        </button>
+                    ))}
+                </div>
+                <div className="justify-items-center mt-6 mb-6">
+                    <h2 className="text-lg font-bold mb-3">Lifelines</h2>
+                    <div className="flex flex-col justify-center gap-4 items-center">
+                        {Object.entries(icons).map(([name, icon]) => (
+                            <div key={name} className="relative">
+                                <button
+                                    onClick={() => handleLifeline(name)}
+                                    disabled={lifelineStatus[name] || activeLifeline !== null}
+                                    className={`p-2 rounded ${lifelineStatus[name] || activeLifeline !== null ? 'cursor-not-allowed opacity-70' : 'cursor-pointer hover:bg-blue-800 active:scale-95'} transition-all`}
+                                >
+                                    <div className="relative">
+                                        <Image
+                                            src={icon}
+                                            width={80}
+                                            height={80}
+                                            alt={name}
+                                            className="mx-auto"
+                                        />
+                                        {lifelineStatus[name] && (
+                                            <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center">
+                                                <Image src="/cross.png" width={80} height={80} alt="Used" className="opacity-80" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className="block text-sm mt-1">{name}</span>
+                                </button>
+                            </div>
+                        ))}
+                    </div>
                     <button
-                        key={screen.id}
-                        className={`p-2 cursor-pointer ${currentScreen === screen.id ? 'bg-yellow-400 hover:bg-yellow-500 text-black' : 'bg-blue-800 hover:bg-blue-700'} transition-all`}
-                        onClick={() => handleScreenChange(screen.id)}
+                        className="mt-2 p-2 bg-blue-700 text-white rounded hover:bg-blue-600 transition-all cursor-pointer"
+                        onClick={resetLifelines}
                     >
-                        {screen.name}
+                        Reset Lifelines
                     </button>
-                ))}
+                </div>
             </div>
 
             <div className="flex items-center justify-center min-h-screen bg-black text-white">
@@ -262,6 +374,46 @@ export default function AdminPage() {
                         </button>}
                     </div>
 
+                    {activeLifeline === "50-50" && (
+                        <div className="bg-blue-900 p-4 my-4 border-2 border-yellow-400 rounded">
+                            <h3 className="text-xl font-bold text-yellow-400 mb-3">Select 2 options to hide:</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                {options.map((opt, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleFiftyFiftyOption(index)}
+                                        className={`p-3 border-2 ${
+                                            fiftyFiftySelection.includes(index) 
+                                                ? 'border-red-500 bg-red-900' 
+                                                : 'border-gray-400 bg-gray-800'
+                                        } rounded`}
+                                    >
+                                        {opt || `Option ${index + 1}`}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="flex gap-3 mt-4">
+                                <button
+                                    onClick={applyFiftyFifty}
+                                    disabled={fiftyFiftySelection.length !== 2}
+                                    className={`p-2 w-1/2 ${
+                                        fiftyFiftySelection.length === 2
+                                            ? 'bg-green-600 hover:bg-green-700'
+                                            : 'bg-gray-600 cursor-not-allowed'
+                                    } rounded`}
+                                >
+                                    Apply 50:50
+                                </button>
+                                <button
+                                    onClick={cancelLifeline}
+                                    className="p-2 w-1/2 bg-red-600 hover:bg-red-700 rounded"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     <hr className="mt-8" />
 
                     <div className="flex lg:flex-row flex-col gap-4 mt-2 mb-4">
@@ -269,10 +421,28 @@ export default function AdminPage() {
                             <h2 className="text-lg my-4">Controls</h2>
                             <div className="grid grid-cols-4 gap-2">
                                 {options.map((_, index) => (
-                                    <button key={`p${index}`} className="p-2 bg-blue-500 rounded hover:bg-blue-600 active:scale-95 transition-all cursor-pointer" onClick={() => socket.emit("pick-answer", index)}>Pick {index + 1}</button>
+                                    <button 
+                                        key={`p${index}`} 
+                                        className={`p-2 rounded ${isOptionDisabled(index) 
+                                            ? 'bg-gray-400 opacity-50 cursor-not-allowed' 
+                                            : 'bg-blue-500 hover:bg-blue-600 active:scale-95 cursor-pointer'} transition-all`} 
+                                        onClick={() => !isOptionDisabled(index) && socket.emit("pick-answer", index)}
+                                        disabled={isOptionDisabled(index)}
+                                    >
+                                        Pick {index + 1}
+                                    </button>
                                 ))}
                                 {options.map((_, index) => (
-                                    <button key={`c${index}`} className="p-2 bg-green-500 rounded hover:bg-green-600 active:scale-95 transition-all cursor-pointer" onClick={() => socket.emit("mark-correct", index)}>✅ {index + 1}</button>
+                                    <button 
+                                        key={`c${index}`} 
+                                        className={`p-2 rounded ${isOptionDisabled(index) 
+                                            ? 'bg-gray-400 opacity-50 cursor-not-allowed' 
+                                            : 'bg-green-500 hover:bg-green-600 active:scale-95 cursor-pointer'} transition-all`}
+                                        onClick={() => !isOptionDisabled(index) && socket.emit("mark-correct", index)}
+                                        disabled={isOptionDisabled(index)}
+                                    >
+                                        ✅ {index + 1}
+                                    </button>
                                 ))}
                             </div>
                         </div>

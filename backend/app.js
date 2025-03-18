@@ -23,6 +23,15 @@ let correctAnswer = null;
 let lastBroadcastTime = 0;
 let currentScreen = "logo";
 
+let lifelines = {
+    "50-50": false,
+    "Audience Poll": false,
+    "Phone a friend": false
+};
+
+let fiftyFiftyOptionsToHide = [];
+let activeLifeline = null;
+
 app.get("/", (req, res) => {
     res.send("Server is running");
 });
@@ -59,6 +68,16 @@ io.on("connection", (socket) => {
         state: timerStarted ? (timerPaused ? "paused" : "running") : "stopped"
     });
 
+    socket.emit("update-lifelines", lifelines);
+    
+    if (activeLifeline) {
+        socket.emit("set-active-lifeline", activeLifeline);
+    }
+    
+    if (fiftyFiftyOptionsToHide.length > 0) {
+        socket.emit("apply-5050", fiftyFiftyOptionsToHide);
+    }
+
     socket.on("question-update", (data) => {
         if (!data.text || !data.text.trim() ||
             !data.options || data.options.some(opt => !opt || !opt.trim())) {
@@ -85,6 +104,13 @@ io.on("connection", (socket) => {
         io.emit("display-question", currentQuestion);
         io.emit("reset-highlights");
         io.emit("timer-state", { state: "stopped" });
+        io.emit("change-screen", "question");
+        
+        fiftyFiftyOptionsToHide = [];
+        io.emit("apply-5050", []);
+        
+        activeLifeline = null;
+        io.emit("set-active-lifeline", null);
     });
 
     socket.on("show-options", () => {
@@ -110,46 +136,50 @@ io.on("connection", (socket) => {
 
     socket.on("pick-answer", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
-            highlightedOption = { index, type: "selected" };
-            correctAnswer = null;
-            
-            io.emit("reset-highlights");
-            io.emit("highlight-answer", index);
-            io.emit("trigger-audio", "lock");
-            pauseTimer(false);
+            if (!fiftyFiftyOptionsToHide.includes(index)) {
+                highlightedOption = { index, type: "selected" };
+                correctAnswer = null;
+                
+                io.emit("reset-highlights");
+                io.emit("highlight-answer", index);
+                io.emit("trigger-audio", "lock");
+                pauseTimer(false);
+            }
         }
     });
 
     socket.on("mark-correct", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
-            correctAnswer = index;
-            
-            if (highlightedOption.index !== null && highlightedOption.type === "selected") {
-                if (highlightedOption.index === index) {
+            if (!fiftyFiftyOptionsToHide.includes(index)) {
+                correctAnswer = index;
+                
+                if (highlightedOption.index !== null && highlightedOption.type === "selected") {
+                    if (highlightedOption.index === index) {
+                        highlightedOption = { index, type: "correct" };
+                        io.emit("reset-highlights");
+                        io.emit("mark-correct", index);
+                        io.emit("trigger-audio", "correct");
+                    } else {
+                        io.emit("reset-highlights");
+                        io.emit("show-correct-answer", {
+                            selectedIndex: highlightedOption.index,
+                            correctIndex: index
+                        });
+                        io.emit("trigger-audio", "wrong");
+                    }
+                } else {
                     highlightedOption = { index, type: "correct" };
                     io.emit("reset-highlights");
                     io.emit("mark-correct", index);
                     io.emit("trigger-audio", "correct");
-                } else {
-                    io.emit("reset-highlights");
-                    io.emit("show-correct-answer", {
-                        selectedIndex: highlightedOption.index,
-                        correctIndex: index
-                    });
-                    io.emit("trigger-audio", "wrong");
                 }
-            } else {
-                highlightedOption = { index, type: "correct" };
-                io.emit("reset-highlights");
-                io.emit("mark-correct", index);
-                io.emit("trigger-audio", "correct");
             }
         }
     });
 
     socket.on("mark-wrong", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
-            if (correctAnswer === null) {
+            if (!fiftyFiftyOptionsToHide.includes(index) && correctAnswer === null) {
                 highlightedOption = { index, type: "wrong" };
                 io.emit("reset-highlights");
                 io.emit("mark-wrong", index);
@@ -190,6 +220,65 @@ io.on("connection", (socket) => {
         pauseTimer(false);
     });
 
+    socket.on("use-lifeline", (lifeline) => {
+        if (lifelines[lifeline] === false) {
+            activeLifeline = lifeline;
+            io.emit("set-active-lifeline", lifeline);
+            
+            currentScreen = "lifeline";
+            io.emit("change-screen", "lifeline");
+            io.emit("show-specific-lifeline", lifeline);
+            
+            if (lifeline === "50-50") {
+                io.emit("prepare-fifty-fifty", Array.from(Array(4).keys()));
+            } else {
+                lifelines[lifeline] = true;
+                io.emit("update-lifelines", lifelines);
+                io.emit("trigger-audio", "lifeline");
+            }
+        }
+    });
+    
+    socket.on("select-fifty-fifty-options", (optionsToHide) => {
+        if (optionsToHide.length === 2 && activeLifeline === "50-50") {
+            fiftyFiftyOptionsToHide = optionsToHide;
+            lifelines["50-50"] = true;
+            
+            io.emit("update-lifelines", lifelines);
+            io.emit("apply-5050", fiftyFiftyOptionsToHide);
+            io.emit("trigger-audio", "lifeline");
+            
+            currentScreen = "question";
+            io.emit("change-screen", "question");
+            
+            activeLifeline = null;
+            io.emit("set-active-lifeline", null);
+        }
+    });
+    
+    socket.on("cancel-lifeline", () => {
+        activeLifeline = null;
+        io.emit("set-active-lifeline", null);
+        
+        if (currentScreen === "lifeline") {
+            currentScreen = "question";
+            io.emit("change-screen", "question");
+        }
+    });
+    
+    socket.on("reset-lifelines", () => {
+        lifelines = {
+            "50-50": false,
+            "Audience Poll": false,
+            "Phone a friend": false
+        };
+        fiftyFiftyOptionsToHide = [];
+        activeLifeline = null;
+        io.emit("update-lifelines", lifelines);
+        io.emit("apply-5050", []);
+        io.emit("set-active-lifeline", null);
+    });
+
     socket.on("remove-question", () => {
         currentQuestion = {
             text: "",
@@ -204,6 +293,11 @@ io.on("connection", (socket) => {
         io.emit("clear-question");
         io.emit("reset-highlights");
         io.emit("timer-state", { state: "stopped" });
+        fiftyFiftyOptionsToHide = [];
+        activeLifeline = null;
+        io.emit("apply-5050", []);
+        io.emit("set-active-lifeline", null);
+        io.emit("change-screen", "logo");
     });
 
     socket.on("play-audio", (type) => {
@@ -243,6 +337,11 @@ io.on("connection", (socket) => {
     socket.on("set-screen", (screen) => {
         currentScreen = screen;
         io.emit("change-screen", screen);
+        
+        if (activeLifeline && screen !== "lifeline") {
+            activeLifeline = null;
+            io.emit("set-active-lifeline", null);
+        }
     });
 });
 
