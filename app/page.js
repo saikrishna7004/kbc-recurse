@@ -1,10 +1,15 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import SemiCircleProgressBar from "react-progressbar-semicircle";
 import Image from "next/image";
 
-const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000");
+const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
+    extraHeaders: {
+        'ngrok-skip-browser-warning': 'true'
+    }
+});
 const audioFiles = {
     correct: "/audio/Correct.mp3",
     wrong: "/audio/Wrong.mp3",
@@ -36,6 +41,7 @@ export default function DisplayPage() {
         showOptions: false
     });
     const [selectedStatus, setSelectedStatus] = useState({ index: null, status: "" });
+    const [correctAnswer, setCorrectAnswer] = useState(null);
     const [timer, setTimer] = useState({ current: 0, max: 0 });
     const [timerFrozen, setTimerFrozen] = useState(true);
     const [showOptions, setShowOptions] = useState(false);
@@ -51,6 +57,7 @@ export default function DisplayPage() {
         socket.on("display-question", (data) => {
             setQuestion(data);
             setSelectedStatus({ index: null, status: "" });
+            setCorrectAnswer(null);
             setTimer({ current: data.timer || 60, max: data.maxTimer || 60 });
             setShowOptions(data.showOptions || false);
             setTimerFrozen(true);
@@ -63,16 +70,30 @@ export default function DisplayPage() {
 
         socket.on("highlight-answer", (index) => {
             setSelectedStatus({ index, status: "selected" });
+            setCorrectAnswer(null);
         });
 
         socket.on("mark-correct", (index) => {
             setSelectedStatus({ index, status: "correct" });
+            setCorrectAnswer(null);
             playAudio("correct");
         });
 
         socket.on("mark-wrong", (index) => {
             setSelectedStatus({ index, status: "wrong" });
+            setCorrectAnswer(null);
             playAudio("wrong");
+        });
+
+        socket.on("show-correct-answer", (data) => {
+            setSelectedStatus({ index: data.selectedIndex, status: "selected" });
+            setCorrectAnswer(data.correctIndex);
+            playAudio("wrong");
+        });
+
+        socket.on("reset-highlights", () => {
+            setSelectedStatus({ index: null, status: "" });
+            setCorrectAnswer(null);
         });
 
         socket.on("update-timer", (data) => {
@@ -100,10 +121,21 @@ export default function DisplayPage() {
         });
 
         socket.on("clear-question", () => {
-            setQuestion(null);
+            setQuestion({
+                text: "",
+                options: ["&nbsp;", "&nbsp;", "&nbsp;", "&nbsp;"],
+                correctIndex: null,
+                wrongIndex: null,
+                selected: null,
+                timer: 60,
+                maxTimer: 60,
+                showOptions: false
+            });
             stopAllAudio();
             setTimerFrozen(true);
             setShowOptions(false);
+            setSelectedStatus({ index: null, status: "" });
+            setCorrectAnswer(null);
         });
 
         socket.on("trigger-audio", (audioKey) => {
@@ -151,6 +183,8 @@ export default function DisplayPage() {
             socket.off("freeze-timer");
             socket.off("unfreeze-timer");
             socket.off("change-screen");
+            socket.off("show-correct-answer");
+            socket.off("reset-highlights");
             if (timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);
             }
@@ -221,6 +255,15 @@ export default function DisplayPage() {
     };
 
     const getBgColor = (index) => {
+        if (correctAnswer !== null && selectedStatus.index !== null) {
+            if (index === correctAnswer) {
+                return "bg-gradient-to-r from-green-800 via-green-700 to-green-800";
+            }
+            if (index === selectedStatus.index) {
+                return "bg-gradient-to-r from-red-800 via-red-700 to-red-800";
+            }
+        }
+
         if (selectedStatus.index === index) {
             if (selectedStatus.status === "selected") return "bg-gradient-to-r from-yellow-700 via-yellow-600 to-yellow-700";
             if (selectedStatus.status === "correct") return "bg-gradient-to-r from-green-800 via-green-700 to-green-800";
@@ -269,7 +312,7 @@ export default function DisplayPage() {
                         <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={200} height={200} alt="Logo" />
                         <div className="relative w-32 h-32 -mb-16 mx-auto border-4 border-yellow-300 bg-radial from-[#053EAE] to-[#03126F] rounded-full">
                             <SemiCircleProgressBar percentage={dashOffset || 0} diameter={120} strokeWidth={5} background="transparent" stroke="#eab308" />
-                            <span className="text-4xl text-semibold text-yellow-200 absolute translate-x-[-50%] translate-y-[-115%]">{timer.current}</span>
+                            <span className="text-4xl text-semibold text-yellow-200 absolute translate-x-[-50%] translate-y-[-115%]">{timer.current === "unlimited" ? "∞" : timer.current}</span>
                         </div>
 
                         <div className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden">
@@ -279,18 +322,30 @@ export default function DisplayPage() {
 
                         <div className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden">
                             <div className="grid grid-cols-2 gap-4 w-4xl mx-auto mt-4">
-                                <span className="absolute left-0 top-[105px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
-                                <span className="absolute left-0 top-[40px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
+                                <span className="absolute left-0 top-[127px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
+                                <span className="absolute left-0 top-[47px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
                                 {question?.options?.map((option, index) => (
                                     <div key={index}>
                                         <div
                                             onClick={() => socket.emit("answer-selected", index)}
-                                            className={`border-4 relative z-10 h-[52px] border-yellow-300 rounded-full py-2 px-4 text-center text-lg ${getBgColor(index)}`}
+                                            className={`border-4 relative z-10 h-[65px] border-yellow-300 rounded-full py-2 px-4 text-center lg:text-lg text-sm content-center ${getBgColor(index)}`}
                                         >
                                             {showOptions ? option : ""}
                                         </div>
                                     </div>
                                 ))}
+                                {
+                                    !(question?.options?.length > 0) && [1, 2, 3, 4].map((option, index) => (
+                                        <div key={index}>
+                                            <div
+                                                onClick={() => socket.emit("answer-selected", index)}
+                                                className={`border-4 relative z-10 h-[52px] border-yellow-300 rounded-full py-2 px-4`}
+                                            >
+                                                {showOptions ? option : ""}
+                                            </div>
+                                        </div>
+                                    ))
+                                }
                             </div>
                         </div>
                     </>
@@ -332,7 +387,6 @@ export default function DisplayPage() {
             case "blank":
                 return (
                     <div className="w-full h-screen bg-black">
-                        {/* Blank screen */}
                     </div>
                 );
             default:

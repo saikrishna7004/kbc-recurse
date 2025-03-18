@@ -2,7 +2,11 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 
-const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000");
+const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
+    extraHeaders: {
+        "ngrok-skip-browser-warning": "true",
+    }
+});
 
 export default function AdminPage() {
     const [question, setQuestion] = useState("");
@@ -21,11 +25,11 @@ export default function AdminPage() {
         end: "End",
         lock: "Lock",
         next: "Next",
+        stop: "Stop",
         suspense1: "Suspense 1",
         suspense2: "Suspense 2",
         suspense3: "Suspense 3",
         suspense4: "Suspense 4",
-        stop: "Stop",
     };
 
     const screens = [
@@ -142,8 +146,8 @@ export default function AdminPage() {
     const isTimerChangeable = timerState === "stopped";
 
     return (
-        <>
-            <div className="absolute right-4 top-4 flex flex-col flex-wrap gap-2">
+        <div className="flex flex-col-reverse lg:flex-none">
+            <div className="lg:absolute lg:right-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4">
                 <h2 className="text-lg font-bold mb-3">Screen Control</h2>
                 {screens.map(screen => (
                     <button
@@ -166,7 +170,7 @@ export default function AdminPage() {
                         </div>
                     )}
 
-                    <input className="w-full p-3 mb-4 text-lg bg-gray-800" placeholder="Enter question..." value={question} onChange={(e) => setQuestion(e.target.value)}/>
+                    <input className="w-full p-3 mb-4 text-lg bg-gray-800" placeholder="Enter question..." value={question} onChange={(e) => setQuestion(e.target.value)} />
 
                     <div className="grid grid-cols-2 gap-2">
                         {options.map((opt, index) => (
@@ -185,7 +189,7 @@ export default function AdminPage() {
                     </div>
 
                     {isTimerChangeable && (
-                        <div className="flex gap-2 my-2">
+                        <div className="flex flex-wrap gap-2 my-2">
                             {["30", "45", "60", "unlimited"].map((t) => (
                                 <button
                                     key={t}
@@ -217,7 +221,7 @@ export default function AdminPage() {
                     )}
 
                     <div className="flex gap-2 mt-4">
-                        <div className="w-full p-3 bg-gray-800 rounded-lg text-lg flex items-center justify-center">
+                        <div className="w-full p-3 bg-gray-800 text-lg flex items-center justify-center">
                             Timer Status: {timerState.toUpperCase()}
                             <span className="ml-4">Current Time: {formatTimer()}</span>
                         </div>
@@ -260,8 +264,8 @@ export default function AdminPage() {
 
                     <hr className="mt-8" />
 
-                    <div className="flex flex-row gap-4 mt-2 mb-4">
-                        <div className="w-1/2">
+                    <div className="flex lg:flex-row flex-col gap-4 mt-2 mb-4">
+                        <div className="lg:w-1/2">
                             <h2 className="text-lg my-4">Controls</h2>
                             <div className="grid grid-cols-4 gap-2">
                                 {options.map((_, index) => (
@@ -270,12 +274,9 @@ export default function AdminPage() {
                                 {options.map((_, index) => (
                                     <button key={`c${index}`} className="p-2 bg-green-500 rounded hover:bg-green-600 active:scale-95 transition-all cursor-pointer" onClick={() => socket.emit("mark-correct", index)}>✅ {index + 1}</button>
                                 ))}
-                                {options.map((_, index) => (
-                                    <button key={`w${index}`} className="p-2 bg-red-500 rounded hover:bg-red-600 active:scale-95 transition-all cursor-pointer" onClick={() => socket.emit("mark-wrong", index)}>❌ {index + 1}</button>
-                                ))}
                             </div>
                         </div>
-                        <div className="w-1/2">
+                        <div className="lg:w-1/2">
                             <h2 className="text-lg my-4">Mixer</h2>
                             <div className="grid grid-cols-4 gap-2">
                                 {Object.keys(audios).map((key) => (
@@ -286,6 +287,6 @@ export default function AdminPage() {
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 }

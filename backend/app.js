@@ -19,6 +19,7 @@ let timerPausedAt = null;
 let timerMaxValue = 30;
 let timerStarted = false;
 let highlightedOption = { index: null, type: null };
+let correctAnswer = null;
 let lastBroadcastTime = 0;
 let currentScreen = "logo";
 
@@ -43,6 +44,13 @@ io.on("connection", (socket) => {
                 socket.emit("mark-wrong", highlightedOption.index);
             }
         }
+        
+        if (correctAnswer !== null && highlightedOption.index !== null && highlightedOption.index !== correctAnswer) {
+            socket.emit("show-correct-answer", {
+                selectedIndex: highlightedOption.index,
+                correctIndex: correctAnswer
+            });
+        }
     }
 
     socket.emit("change-screen", currentScreen);
@@ -59,31 +67,24 @@ io.on("connection", (socket) => {
 
         timerMaxValue = timerValue;
         currentTimerValue = timerValue;
-
-        if (timerStarted) {
-            if (currentQuestion) {
-                currentQuestion = {
-                    ...currentQuestion,
-                    text: data.text,
-                    options: data.options
-                };
-            }
-        } else {
-            timerPaused = true;
-            timerPausedAt = null;
-            timerStartTime = null;
-            timerStarted = false;
-            highlightedOption = { index: null, type: null };
-            currentQuestion = {
-                ...data,
-                timer: timerValue,
-                maxTimer: timerMaxValue,
-                showOptions: false
-            };
-        }
+        
+        highlightedOption = { index: null, type: null };
+        correctAnswer = null;
+        timerPaused = true;
+        timerPausedAt = null;
+        timerStartTime = null;
+        timerStarted = false;
+        
+        currentQuestion = {
+            ...data,
+            timer: timerValue,
+            maxTimer: timerMaxValue,
+            showOptions: false
+        };
 
         io.emit("display-question", currentQuestion);
-        io.emit("timer-state", { state: timerStarted ? (timerPaused ? "paused" : "running") : "stopped" });
+        io.emit("reset-highlights");
+        io.emit("timer-state", { state: "stopped" });
     });
 
     socket.on("show-options", () => {
@@ -104,12 +105,15 @@ io.on("connection", (socket) => {
         });
         io.emit("timer-state", { state: "running" });
 
-        lastBroadcastTime = Date.now();
+        updateTimerForAllClients(true, 59 - timerValue);
     });
 
     socket.on("pick-answer", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
             highlightedOption = { index, type: "selected" };
+            correctAnswer = null;
+            
+            io.emit("reset-highlights");
             io.emit("highlight-answer", index);
             io.emit("trigger-audio", "lock");
             pauseTimer(false);
@@ -118,17 +122,39 @@ io.on("connection", (socket) => {
 
     socket.on("mark-correct", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
-            highlightedOption = { index, type: "correct" };
-            io.emit("mark-correct", index);
-            io.emit("trigger-audio", "correct");
+            correctAnswer = index;
+            
+            if (highlightedOption.index !== null && highlightedOption.type === "selected") {
+                if (highlightedOption.index === index) {
+                    highlightedOption = { index, type: "correct" };
+                    io.emit("reset-highlights");
+                    io.emit("mark-correct", index);
+                    io.emit("trigger-audio", "correct");
+                } else {
+                    io.emit("reset-highlights");
+                    io.emit("show-correct-answer", {
+                        selectedIndex: highlightedOption.index,
+                        correctIndex: index
+                    });
+                    io.emit("trigger-audio", "wrong");
+                }
+            } else {
+                highlightedOption = { index, type: "correct" };
+                io.emit("reset-highlights");
+                io.emit("mark-correct", index);
+                io.emit("trigger-audio", "correct");
+            }
         }
     });
 
     socket.on("mark-wrong", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
-            highlightedOption = { index, type: "wrong" };
-            io.emit("mark-wrong", index);
-            io.emit("trigger-audio", "wrong");
+            if (correctAnswer === null) {
+                highlightedOption = { index, type: "wrong" };
+                io.emit("reset-highlights");
+                io.emit("mark-wrong", index);
+                io.emit("trigger-audio", "wrong");
+            }
         }
     });
 
@@ -141,6 +167,8 @@ io.on("connection", (socket) => {
             max: timerMaxValue,
             audioTrigger: false
         });
+        
+        updateTimerForAllClients(false);
     });
 
     socket.on("change-timer", (value) => {
@@ -154,6 +182,8 @@ io.on("connection", (socket) => {
             max: timerMaxValue,
             audioTrigger: false
         });
+        io.emit("timer-state", { state: timerStarted ? (timerPaused ? "paused" : "running") : "stopped" });
+        updateTimerForAllClients(false);
     });
 
     socket.on("freeze-timer", () => {
@@ -170,7 +200,9 @@ io.on("connection", (socket) => {
         timerPausedAt = null;
         timerStarted = false;
         highlightedOption = { index: null, type: null };
+        correctAnswer = null;
         io.emit("clear-question");
+        io.emit("reset-highlights");
         io.emit("timer-state", { state: "stopped" });
     });
 
@@ -223,6 +255,7 @@ function pauseTimer(triggerAudio = false) {
         }
         io.emit("freeze-timer", triggerAudio);
         io.emit("timer-state", { state: "paused" });
+        updateTimerForAllClients(false);
     }
 }
 
@@ -252,7 +285,21 @@ function updateTimerForClient(socket, triggerAudio = false, audioOffset = 0) {
             max: timerMaxValue
         });
         socket.emit("freeze-timer", false);
-    } else if (timerStartTime) {
+    }
+    else if (currentTimerValue === null) {
+        socket.emit("update-timer", {
+            current: timerValue,
+            max: timerMaxValue,
+            audioTrigger: triggerAudio,
+            startPosition: audioOffset
+        });
+        socket.emit("current-timer", {
+            current: timerValue,
+            max: timerMaxValue
+        });
+        socket.emit("freeze-timer", false);
+    }
+    else if (timerStartTime) {
         const elapsedSeconds = Math.floor((Date.now() - timerStartTime) / 1000);
         const remainingTime = Math.max(0, timerValue - elapsedSeconds);
         socket.emit("update-timer", {
@@ -271,21 +318,11 @@ function updateTimerForClient(socket, triggerAudio = false, audioOffset = 0) {
 
 function updateTimerForAllClients(triggerAudio = false, audioOffset = 0) {
     const now = Date.now();
-    if (!triggerAudio && now - lastBroadcastTime < 950) {
-        return;
-    }
-
     lastBroadcastTime = now;
 
     io.sockets.sockets.forEach(socket => {
         updateTimerForClient(socket, triggerAudio, audioOffset);
     });
 }
-
-setInterval(() => {
-    if (!timerPaused && timerStartTime) {
-        updateTimerForAllClients(false);
-    }
-}, 1000);
 
 module.exports = server;
