@@ -417,7 +417,7 @@ export default function AdminPage() {
                             className="w-full p-3 bg-orange-500 hover:bg-orange-600 active:scale-95 transition-all cursor-pointer"
                             onClick={() => socket.emit("remove-question")}
                         >
-                            ❌ Remove
+                            Reset
                         </button>
                         {timerState === "running" && <button
                             className="w-full p-3 bg-red-500 hover:bg-red-600 active:scale-95 transition-all cursor-pointer"
