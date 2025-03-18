@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
 import SemiCircleProgressBar from "react-progressbar-semicircle";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 
 const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
     extraHeaders: {
@@ -52,6 +53,88 @@ export default function DisplayPage() {
     const lastUpdateTime = useRef(0);
 
     const [dashOffset, setDashOffset] = useState(100);
+
+    const logoVariants = {
+        hidden: { opacity: 0, scale: 0.7 },
+        visible: { 
+            opacity: 1, 
+            scale: 1,
+            transition: { duration: 1, type: "spring", bounce: 0.4 }
+        }
+    };
+
+    const fadeInVariants = {
+        hidden: { opacity: 0 },
+        visible: { 
+            opacity: 1,
+            transition: { duration: 0.8 }
+        }
+    };
+
+    const questionVariants = {
+        hidden: { opacity: 0, y: -50 },
+        visible: { 
+            opacity: 1, 
+            y: 0,
+            transition: { duration: 0.7 }
+        }
+    };
+
+    const optionsContainerVariants = {
+        hidden: { opacity: 0 },
+        visible: { 
+            opacity: 1,
+            transition: { 
+                staggerChildren: 0.2,
+                delayChildren: 0.3,
+                duration: 0.5 
+            }
+        }
+    };
+
+    const optionItemVariants = {
+        hidden: { opacity: 0, x: -20 },
+        visible: { 
+            opacity: 1, 
+            x: 0,
+            transition: { duration: 0.5 }
+        }
+    };
+    
+    const timerVariants = {
+        hidden: { scale: 0, opacity: 0 },
+        visible: { 
+            scale: 1, 
+            opacity: 1,
+            transition: { duration: 0.6, type: "spring", bounce: 0.5 }
+        }
+    };
+
+    const textChangeVariants = {
+        initial: { opacity: 0, y: 10 },
+        animate: { 
+            opacity: 1, 
+            y: 0,
+            transition: { duration: 0.3 }
+        },
+        exit: { 
+            opacity: 0,
+            y: -10, 
+            transition: { duration: 0.2 }
+        }
+    };
+    
+    const optionTextVariants = {
+        initial: { opacity: 0 },
+        animate: { 
+            opacity: 1,
+            transition: { duration: 0.3 }
+        },
+        exit: { 
+            opacity: 0,
+            transition: { duration: 0.2 }
+        }
+    };
 
     useEffect(() => {
         socket.on("display-question", (data) => {
@@ -260,7 +343,7 @@ export default function DisplayPage() {
                 return "bg-gradient-to-r from-green-800 via-green-700 to-green-800";
             }
             if (index === selectedStatus.index) {
-                return "bg-gradient-to-r from-red-800 via-red-700 to-red-800";
+                return "bg-gradient-to-r from-yellow-700 via-yellow-600 to-yellow-700";
             }
         }
 
@@ -293,7 +376,13 @@ export default function DisplayPage() {
     }, [question]);
 
     useEffect(() => {
-        const progress = (timer.current / timer.max) * 100;
+        if (currentScreen === "question") {
+            setTimeout(adjustFontSize, 100);
+        }
+    }, [currentScreen]);
+
+    useEffect(() => {
+        const progress = ((timer.max - timer.current) / timer.max) * 100;
         setDashOffset(progress);
     }, [timer.current, timer.max]);
 
@@ -302,87 +391,184 @@ export default function DisplayPage() {
             case "logo":
                 return (
                     <div className="flex flex-col items-center justify-center">
-                        <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={300} height={300} alt="Logo" />
-                        <h1 className="text-4xl font-bold text-yellow-400 mt-8">Kaun Banega Codepati</h1>
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={logoVariants}
+                        >
+                            <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={300} height={300} alt="Logo" />
+                        </motion.div>
+                        <motion.h1 
+                            className="text-4xl font-bold text-yellow-400 mt-8"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5, duration: 0.8 }}
+                        >
+                            Kaun Banega Codepati
+                        </motion.h1>
                     </div>
                 );
             case "question":
                 return (
                     <>
-                        <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={200} height={200} alt="Logo" />
-                        <div className="relative w-32 h-32 -mb-16 mx-auto border-4 border-yellow-300 bg-radial from-[#053EAE] to-[#03126F] rounded-full">
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={logoVariants}
+                        >
+                            <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={200} height={200} alt="Logo" />
+                        </motion.div>
+                        
+                        <motion.div 
+                            className="relative w-32 h-32 -mb-16 mx-auto border-4 border-yellow-300 bg-radial from-[#053EAE] to-[#03126F] rounded-full"
+                            initial="hidden"
+                            animate="visible"
+                            variants={timerVariants}
+                        >
                             <SemiCircleProgressBar percentage={dashOffset || 0} diameter={120} strokeWidth={5} background="transparent" stroke="#eab308" />
                             <span className="text-4xl text-semibold text-yellow-200 absolute translate-x-[-50%] translate-y-[-115%]">{timer.current === "unlimited" ? "∞" : timer.current}</span>
-                        </div>
+                        </motion.div>
 
-                        <div className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden">
+                        <motion.div 
+                            className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden px-4"
+                            initial="hidden"
+                            animate="visible"
+                            variants={questionVariants}
+                            onAnimationComplete={adjustFontSize}
+                        >
                             <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
-                            <span ref={textRef} className="z-1 w-4xl h-[80px] content-center border-4 border-yellow-300 bg-gradient-to-r from-[#03126F] via-[#053EAE] to-[#03126F]">{question?.text || ""}</span>
-                        </div>
+                            <span ref={textRef} className="z-1 w-4xl h-[80px] content-center border-4 border-yellow-300 bg-gradient-to-r from-[#03126F] via-[#053EAE] to-[#03126F] relative overflow-hidden">
+                                <AnimatePresence mode="wait">
+                                    <motion.span 
+                                        key={question.text} 
+                                        className="block w-full h-full flex items-center justify-center"
+                                        initial="initial"
+                                        animate="animate"
+                                        exit="exit"
+                                        variants={textChangeVariants}
+                                    >
+                                        {question?.text || ""}
+                                    </motion.span>
+                                </AnimatePresence>
+                            </span>
+                        </motion.div>
 
-                        <div className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden">
+                        <motion.div 
+                            className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden px-4"
+                            initial="hidden"
+                            animate="visible"
+                            variants={optionsContainerVariants}
+                        >
                             <div className="grid grid-cols-2 gap-4 w-4xl mx-auto mt-4">
                                 <span className="absolute left-0 top-[127px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
                                 <span className="absolute left-0 top-[47px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
                                 {question?.options?.map((option, index) => (
-                                    <div key={index}>
+                                    <motion.div key={index} variants={optionItemVariants}>
                                         <div
                                             onClick={() => socket.emit("answer-selected", index)}
-                                            className={`border-4 relative z-10 h-[65px] border-yellow-300 rounded-full py-2 px-4 text-center lg:text-lg text-sm content-center ${getBgColor(index)}`}
+                                            className={`border-4 relative z-10 h-[65px] border-yellow-300 rounded-full py-2 px-4 text-center md:text-lg text-sm content-center ${getBgColor(index)} overflow-hidden`}
                                         >
-                                            {showOptions ? option : ""}
+                                            <AnimatePresence mode="wait">
+                                                {showOptions && (
+                                                    <motion.span 
+                                                        key={`option-${index}-${option}`} 
+                                                        className="block w-full h-full flex items-center justify-center"
+                                                        initial="initial"
+                                                        animate="animate"
+                                                        exit="exit"
+                                                        variants={optionTextVariants}
+                                                    >
+                                                        {option}
+                                                    </motion.span>
+                                                )}
+                                            </AnimatePresence>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 ))}
                                 {
                                     !(question?.options?.length > 0) && [1, 2, 3, 4].map((option, index) => (
-                                        <div key={index}>
+                                        <motion.div key={index} variants={optionItemVariants}>
                                             <div
                                                 onClick={() => socket.emit("answer-selected", index)}
                                                 className={`border-4 relative z-10 h-[52px] border-yellow-300 rounded-full py-2 px-4`}
                                             >
                                                 {showOptions ? option : ""}
                                             </div>
-                                        </div>
+                                        </motion.div>
                                     ))
                                 }
                             </div>
-                        </div>
+                        </motion.div>
                     </>
                 );
             case "lifeline":
                 return (
-                    <div className="flex flex-col items-center justify-center mb-12">
-                        <h2 className="text-3xl font-bold text-yellow-400 mb-8">Lifelines</h2>
+                    <motion.div 
+                        className="flex flex-col items-center justify-center mb-12"
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeInVariants}
+                    >
+                        <motion.h2 
+                            className="text-3xl font-bold text-yellow-400 mb-8"
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                        >
+                            Lifelines
+                        </motion.h2>
                         <div className="flex gap-8">
-                            {Object.entries(icons).map(([key, icon]) => {
-                                return <div key={key} className="flex flex-col items-center justify-center">
+                            {Object.entries(icons).map(([key, icon], index) => {
+                                return <motion.div 
+                                    key={key} 
+                                    className="flex flex-col items-center justify-center"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: index * 0.2, duration: 0.5 }}
+                                >
                                     <Image className="w-32 h-auto" src={icon} width={100} height={100} alt={key} />
-                                </div>
+                                </motion.div>
                             })}
                         </div>
-                    </div>
+                    </motion.div>
                 );
             case "prize":
                 return (
-                    <div className="flex flex-col items-center justify-center">
-                        <h2 className="text-3xl font-bold text-yellow-400 mb-8">Prize Money</h2>
-                        <div className="border-4 border-yellow-300 rounded-lg p-6 bg-blue-900 max-w-md">
+                    <motion.div 
+                        className="flex flex-col items-center justify-center"
+                        initial="hidden"
+                        animate="visible"
+                        variants={fadeInVariants}
+                    >
+                        <motion.h2 
+                            className="text-3xl font-bold text-yellow-400 mb-8"
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                        >
+                            Prize Money
+                        </motion.h2>
+                        <motion.div 
+                            className="border-4 border-yellow-300 rounded-lg p-6 bg-blue-900 max-w-md"
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.3, duration: 0.7 }}
+                        >
                             <ul className="space-y-4">
-                                <li className="bg-yellow-600 p-2 rounded">₹ 500</li>
-                                <li>₹ 400</li>
-                                <li>₹ 300</li>
-                                <li>₹ 200</li>
-                                <li>₹ 100</li>
-                                <li className="bg-yellow-600 p-2 rounded">₹ 50</li>
-                                <li>₹ 0</li>
-                                <li>₹ 0</li>
-                                <li>₹ 0</li>
-                                <li>₹ 0</li>
-                                <li>₹ 0</li>
+                                {["₹ 500", "₹ 400", "₹ 300", "₹ 200", "₹ 100", "₹ 50", "₹ 0", "₹ 0", "₹ 0", "₹ 0", "₹ 0"].map((amount, index) => (
+                                    <motion.li 
+                                        key={index}
+                                        className={index === 0 || index === 5 ? "bg-yellow-600 p-2 rounded" : ""}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{ delay: 0.4 + (index * 0.08) }}
+                                    >
+                                        {amount}
+                                    </motion.li>
+                                ))}
                             </ul>
-                        </div>
-                    </div>
+                        </motion.div>
+                    </motion.div>
                 );
             case "blank":
                 return (
@@ -392,7 +578,13 @@ export default function DisplayPage() {
             default:
                 return (
                     <div className="flex flex-col items-center justify-center">
-                        <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={300} height={300} alt="Logo" />
+                        <motion.div
+                            initial="hidden"
+                            animate="visible"
+                            variants={logoVariants}
+                        >
+                            <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={300} height={300} alt="Logo" />
+                        </motion.div>
                     </div>
                 );
         }
