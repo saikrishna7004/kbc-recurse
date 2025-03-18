@@ -61,11 +61,12 @@ export default function DisplayPage() {
     const [hiddenOptions, setHiddenOptions] = useState([]);
     const [activeLifeline, setActiveLifeline] = useState(null);
     const [specificLifeline, setSpecificLifeline] = useState(null);
+    const [questionNumber, setQuestionNumber] = useState(1);
 
     const logoVariants = {
         hidden: { opacity: 0, scale: 0.7 },
-        visible: { 
-            opacity: 1, 
+        visible: {
+            opacity: 1,
             scale: 1,
             transition: { duration: 1, type: "spring", bounce: 0.4 }
         }
@@ -73,7 +74,7 @@ export default function DisplayPage() {
 
     const fadeInVariants = {
         hidden: { opacity: 0 },
-        visible: { 
+        visible: {
             opacity: 1,
             transition: { duration: 0.8 }
         }
@@ -81,8 +82,8 @@ export default function DisplayPage() {
 
     const questionVariants = {
         hidden: { opacity: 0, y: -50 },
-        visible: { 
-            opacity: 1, 
+        visible: {
+            opacity: 1,
             y: 0,
             transition: { duration: 0.7 }
         }
@@ -90,29 +91,29 @@ export default function DisplayPage() {
 
     const optionsContainerVariants = {
         hidden: { opacity: 0 },
-        visible: { 
+        visible: {
             opacity: 1,
-            transition: { 
+            transition: {
                 staggerChildren: 0.2,
                 delayChildren: 0.3,
-                duration: 0.5 
+                duration: 0.5
             }
         }
     };
 
     const optionItemVariants = {
         hidden: { opacity: 0, x: -20 },
-        visible: { 
-            opacity: 1, 
+        visible: {
+            opacity: 1,
             x: 0,
             transition: { duration: 0.5 }
         }
     };
-    
+
     const timerVariants = {
         hidden: { scale: 0, opacity: 0 },
-        visible: { 
-            scale: 1, 
+        visible: {
+            scale: 1,
             opacity: 1,
             transition: { duration: 0.6, type: "spring", bounce: 0.5 }
         }
@@ -120,25 +121,25 @@ export default function DisplayPage() {
 
     const textChangeVariants = {
         initial: { opacity: 0, y: 10 },
-        animate: { 
-            opacity: 1, 
+        animate: {
+            opacity: 1,
             y: 0,
             transition: { duration: 0.3 }
         },
-        exit: { 
+        exit: {
             opacity: 0,
-            y: -10, 
+            y: -10,
             transition: { duration: 0.2 }
         }
     };
-    
+
     const optionTextVariants = {
         initial: { opacity: 0 },
-        animate: { 
+        animate: {
             opacity: 1,
             transition: { duration: 0.3 }
         },
-        exit: { 
+        exit: {
             opacity: 0,
             transition: { duration: 0.2 }
         }
@@ -281,6 +282,10 @@ export default function DisplayPage() {
             setSpecificLifeline(lifeline);
         });
 
+        socket.on("update-question-number", (data) => {
+            setQuestionNumber(data.questionNumber);
+        });
+
         return () => {
             socket.off("display-question");
             socket.off("show-options");
@@ -299,6 +304,7 @@ export default function DisplayPage() {
             socket.off("apply-5050");
             socket.off("set-active-lifeline");
             socket.off("show-specific-lifeline");
+            socket.off("update-question-number");
             if (timerIntervalRef.current) {
                 clearInterval(timerIntervalRef.current);
             }
@@ -424,6 +430,8 @@ export default function DisplayPage() {
         }
     };
 
+    const prizeAmounts = ["₹ 500", "₹ 400", "₹ 300", "₹ 200", "₹ 100", "₹ 50", "₹ 0", "₹ 0", "₹ 0", "₹ 0", "₹ 0"];
+
     const renderScreen = () => {
         switch (currentScreen) {
             case "logo":
@@ -436,7 +444,7 @@ export default function DisplayPage() {
                         >
                             <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={300} height={300} alt="Logo" />
                         </motion.div>
-                        <motion.h1 
+                        <motion.h1
                             className="text-4xl font-bold text-yellow-400 mt-8"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -456,8 +464,8 @@ export default function DisplayPage() {
                         >
                             <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={200} height={200} alt="Logo" />
                         </motion.div>
-                        
-                        <motion.div 
+
+                        <motion.div
                             className="relative w-32 h-32 -mb-16 mx-auto border-4 border-yellow-300 bg-radial from-[#053EAE] to-[#03126F] rounded-full"
                             initial="hidden"
                             animate="visible"
@@ -467,18 +475,28 @@ export default function DisplayPage() {
                             <span className="text-4xl text-semibold text-yellow-200 absolute translate-x-[-50%] translate-y-[-115%]">{timer.current === "unlimited" ? "∞" : timer.current}</span>
                         </motion.div>
 
-                        <motion.div 
-                            className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden px-4"
+                        <motion.div
+                            className="relative flex items-center justify-center mb-6 mx-auto text-center px-4"
                             initial="hidden"
                             animate="visible"
                             variants={questionVariants}
                             onAnimationComplete={adjustFontSize}
                         >
+                            <div className="absolute w-4xl -top-12">
+                                <motion.div
+                                    className="left-12 w-12 h-12 bg-yellow-500 rounded-t-md flex items-center justify-center text-black font-bold text-xl border-x-2 border-t-2 border-yellow-300"
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{ delay: 0.5, type: "spring" }}
+                                >
+                                    {questionNumber}
+                                </motion.div>
+                            </div>
                             <span className="absolute left-0 top-1/2 transform -translate-y-1/2 w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
                             <span ref={textRef} className="z-1 w-4xl h-[80px] content-center border-4 border-yellow-300 bg-gradient-to-r from-[#03126F] via-[#053EAE] to-[#03126F] relative overflow-hidden">
                                 <AnimatePresence mode="wait">
-                                    <motion.span 
-                                        key={question.text} 
+                                    <motion.span
+                                        key={question.text}
                                         className="w-full h-full flex items-center justify-center"
                                         initial="initial"
                                         animate="animate"
@@ -491,7 +509,7 @@ export default function DisplayPage() {
                             </span>
                         </motion.div>
 
-                        <motion.div 
+                        <motion.div
                             className="relative flex items-center justify-center mb-6 mx-auto text-center overflow-hidden px-4"
                             initial="hidden"
                             animate="visible"
@@ -508,8 +526,8 @@ export default function DisplayPage() {
                                         >
                                             <AnimatePresence mode="wait">
                                                 {showOptions && (
-                                                    <motion.span 
-                                                        key={`option-${index}-${option}`} 
+                                                    <motion.span
+                                                        key={`option-${index}-${option}`}
                                                         className="w-full h-full flex items-center justify-center"
                                                         initial="initial"
                                                         animate="animate"
@@ -541,13 +559,13 @@ export default function DisplayPage() {
                 );
             case "lifeline":
                 return (
-                    <motion.div 
+                    <motion.div
                         className="flex flex-col items-center justify-center mb-12"
                         initial="hidden"
                         animate="visible"
                         variants={fadeInVariants}
                     >
-                        <motion.h2 
+                        <motion.h2
                             className="text-3xl font-bold text-yellow-400 mb-8"
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -557,28 +575,28 @@ export default function DisplayPage() {
                         </motion.h2>
                         <div className="flex gap-8 relative">
                             {specificLifeline ? (
-                                <motion.div 
+                                <motion.div
                                     className="flex flex-col items-center justify-center relative"
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1.2 }}
                                     transition={{ duration: 0.7 }}
                                 >
-                                    <Image 
-                                        className="w-64 h-auto" 
-                                        src={icons[specificLifeline]} 
-                                        width={200} 
-                                        height={200} 
-                                        alt={specificLifeline} 
+                                    <Image
+                                        className="w-64 h-auto"
+                                        src={icons[specificLifeline]}
+                                        width={200}
+                                        height={200}
+                                        alt={specificLifeline}
                                     />
                                     <h3 className="text-xl font-bold text-yellow-300 mt-4">{specificLifeline}</h3>
                                 </motion.div>
                             ) : (
                                 Object.entries(icons).map(([key, icon], index) => {
                                     const isUsed = lifelineStatus[key];
-                                    
+
                                     return (
-                                        <motion.div 
-                                            key={key} 
+                                        <motion.div
+                                            key={key}
                                             className={`flex flex-col items-center justify-center relative ${isUsed ? "!opacity-70" : "cursor-pointer"}`}
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
@@ -586,11 +604,11 @@ export default function DisplayPage() {
                                         >
                                             <Image className="w-32 h-auto" src={icon} width={100} height={100} alt={key} />
                                             {isUsed && (
-                                                <Image 
-                                                    className="w-32 h-32 absolute top-0 -mt-4" 
-                                                    src="/cross.png" 
-                                                    width={100} 
-                                                    height={100} 
+                                                <Image
+                                                    className="w-32 h-32 absolute top-0 -mt-4"
+                                                    src="/cross.png"
+                                                    width={100}
+                                                    height={100}
                                                     alt="Cross"
                                                     style={{ opacity: 0.8 }}
                                                 />
@@ -604,13 +622,13 @@ export default function DisplayPage() {
                 );
             case "prize":
                 return (
-                    <motion.div 
+                    <motion.div
                         className="flex flex-col items-center justify-center"
                         initial="hidden"
                         animate="visible"
                         variants={fadeInVariants}
                     >
-                        <motion.h2 
+                        <motion.h2
                             className="text-3xl font-bold text-yellow-400 mb-8"
                             initial={{ opacity: 0, y: -20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -618,24 +636,53 @@ export default function DisplayPage() {
                         >
                             Prize Money
                         </motion.h2>
-                        <motion.div 
+                        <motion.div
                             className="border-4 border-yellow-300 rounded-lg p-6 bg-gradient-to-r from-[#03126F] via-[#053EAE] to-[#03126F] max-w-lg"
                             initial={{ opacity: 0, y: 30 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.3, duration: 0.7 }}
                         >
-                            <div className="space-y-4">
-                                {["₹ 500", "₹ 400", "₹ 300", "₹ 200", "₹ 100", "₹ 50", "₹ 0", "₹ 0", "₹ 0", "₹ 0", "₹ 0"].map((amount, index) => (
-                                    <motion.div 
-                                        key={index}
-                                        className={`text-xl ${(index === 0 || index === 5 ? "bg-yellow-600 p-2 rounded" : "")}`}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: 0.4 + (index * 0.08) }}
-                                    >
-                                        {amount}
-                                    </motion.div>
-                                ))}
+                            <div className="space-y-1">
+                                {prizeAmounts.map((amount, index) => {
+                                    const isCurrentQuestion = index === (11 - questionNumber);
+                                    const isMilestone = index === 0 || index === 5;
+
+                                    return (
+                                        <motion.div
+                                            key={index}
+                                            className={`text-xl p-2 rounded ${isCurrentQuestion
+                                                ? "bg-yellow-500 text-black font-bold border-2 border-white"
+                                                : isMilestone
+                                                    ? "bg-yellow-600 border border-yellow-400"
+                                                    : ""
+                                                }`}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{
+                                                opacity: 1,
+                                                x: 0,
+                                                scale: isCurrentQuestion ? [1, 1.05, 1] : 1
+                                            }}
+                                            transition={{
+                                                delay: 0.4 + (index * 0.08),
+                                                scale: {
+                                                    repeat: Infinity,
+                                                    repeatType: "reverse",
+                                                    duration: 0.8
+                                                }
+                                            }}
+                                        >
+                                            <div className="flex justify-between items-center gap-4 px-2">
+                                                <span>{11 - index}</span>
+                                                <span>{amount}</span>
+                                            </div>
+                                            {isCurrentQuestion &&
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white absolute -right-16 top-0 translate-y-[50%]" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+                                                </svg>
+                                            }
+                                        </motion.div>
+                                    );
+                                })}
                             </div>
                         </motion.div>
                     </motion.div>

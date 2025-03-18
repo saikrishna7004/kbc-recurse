@@ -25,6 +25,7 @@ export default function AdminPage() {
     const [activeLifeline, setActiveLifeline] = useState(null);
     const [fiftyFiftySelection, setFiftyFiftySelection] = useState([]);
     const [hiddenOptions, setHiddenOptions] = useState([]);
+    const [questionNumber, setQuestionNumber] = useState(1);
 
     const audios = {
         correct: "Correct",
@@ -103,6 +104,10 @@ export default function AdminPage() {
             setHiddenOptions(optionsToHide);
         });
 
+        socket.on("update-question-number", (data) => {
+            setQuestionNumber(data.questionNumber);
+        });
+
         const timerUpdateInterval = setInterval(() => {
             if (timerState === "running") {
                 socket.emit("get-timer");
@@ -121,6 +126,7 @@ export default function AdminPage() {
             socket.off("set-active-lifeline");
             socket.off("prepare-fifty-fifty");
             socket.off("apply-5050");
+            socket.off("update-question-number");
             clearInterval(timerUpdateInterval);
         };
     }, [timerState]);
@@ -219,6 +225,20 @@ export default function AdminPage() {
         return hiddenOptions.includes(index);
     };
 
+    const handleIncrementQuestion = () => {
+        socket.emit("increment-question");
+    };
+
+    const handleDecrementQuestion = () => {
+        socket.emit("decrement-question");
+    };
+
+    const handleResetQuestionNumber = () => {
+        socket.emit("reset-question-number");
+    };
+
+    const prizeAmounts = ["₹ 500", "₹ 400", "₹ 300", "₹ 200", "₹ 100", "₹ 50", "₹ 0", "₹ 0", "₹ 0", "₹ 0", "₹ 0"];
+
     return (
         <div className="flex flex-col-reverse lg:flex-none">
             <div className="lg:absolute lg:right-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4">
@@ -234,9 +254,9 @@ export default function AdminPage() {
                         </button>
                     ))}
                 </div>
-                <div className="justify-items-center mt-6 mb-6">
-                    <h2 className="text-lg font-bold mb-3">Lifelines</h2>
-                    <div className="flex flex-col justify-center gap-4 items-center">
+                <div className="justify-items-center mt-4 mb-6">
+                    <h2 className="text-lg font-bold mb-2">Lifelines</h2>
+                    <div className="flex flex-col justify-center gap-2 items-center">
                         {Object.entries(icons).map(([name, icon]) => (
                             <div key={name} className="relative">
                                 <button
@@ -273,8 +293,50 @@ export default function AdminPage() {
             </div>
 
             <div className="flex items-center justify-center min-h-screen bg-black text-white">
-                <div className="w-full max-w-5xl bg-gray-900 px-6 py-4 rounded-lg shadow-lg text-center border-4 border-yellow-500">
+                <div className="w-full max-w-5xl bg-gray-900 px-6 py-4 shadow-lg text-center border-4 border-yellow-500">
                     <h1 className="text-2xl font-bold text-yellow-500 mb-4">Admin Panel</h1>
+
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="flex items-center">
+                            <button
+                                onClick={handleDecrementQuestion}
+                                className="p-2 bg-red-500 hover:bg-red-600 active:scale-95 cursor-pointer"
+                                disabled={questionNumber <= 1}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+
+                            <div className="px-4 py-2 bg-gray-800 text-white font-bold">
+                                Question {questionNumber}/11
+                            </div>
+
+                            <button
+                                onClick={handleIncrementQuestion}
+                                className="p-2 bg-green-500 hover:bg-green-600 active:scale-95 cursor-pointer"
+                                disabled={questionNumber >= 11}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="flex items-center">
+                            <div className="p-2 bg-yellow-600 text-white font-bold">
+                                Prize: {prizeAmounts[11 - questionNumber]}
+                            </div>
+                            <button
+                                onClick={handleResetQuestionNumber}
+                                className="ml-2 p-2 h-10 bg-purple-500 hover:bg-purple-600 active:scale-95 cursor-pointer"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
 
                     {error && (
                         <div className="bg-red-600 text-white p-2 rounded mb-4">
@@ -301,7 +363,7 @@ export default function AdminPage() {
                     </div>
 
                     {isTimerChangeable && (
-                        <div className="flex flex-wrap gap-2 my-2">
+                        <div className="flex flex-row flex-wrap gap-2 my-2">
                             {["30", "45", "60", "unlimited"].map((t) => (
                                 <button
                                     key={t}
@@ -329,15 +391,12 @@ export default function AdminPage() {
                             >
                                 Set
                             </button>
+                            <div className="bg-gray-800 px-2 text-lg flex items-center justify-center">
+                                Timer Status: {timerState.toUpperCase()}
+                                <span className="ml-4">Current Time: {formatTimer()}</span>
+                            </div>
                         </div>
                     )}
-
-                    <div className="flex gap-2 mt-4">
-                        <div className="w-full p-3 bg-gray-800 text-lg flex items-center justify-center">
-                            Timer Status: {timerState.toUpperCase()}
-                            <span className="ml-4">Current Time: {formatTimer()}</span>
-                        </div>
-                    </div>
 
                     <div className="flex gap-2 mt-4">
                         {isTimerChangeable && <button
@@ -382,11 +441,10 @@ export default function AdminPage() {
                                     <button
                                         key={index}
                                         onClick={() => handleFiftyFiftyOption(index)}
-                                        className={`p-3 border-2 ${
-                                            fiftyFiftySelection.includes(index) 
-                                                ? 'border-red-500 bg-red-900' 
-                                                : 'border-gray-400 bg-gray-800'
-                                        } rounded`}
+                                        className={`p-3 border-2 ${fiftyFiftySelection.includes(index)
+                                            ? 'border-red-500 bg-red-900'
+                                            : 'border-gray-400 bg-gray-800'
+                                            } rounded`}
                                     >
                                         {opt || `Option ${index + 1}`}
                                     </button>
@@ -396,11 +454,10 @@ export default function AdminPage() {
                                 <button
                                     onClick={applyFiftyFifty}
                                     disabled={fiftyFiftySelection.length !== 2}
-                                    className={`p-2 w-1/2 ${
-                                        fiftyFiftySelection.length === 2
-                                            ? 'bg-green-600 hover:bg-green-700'
-                                            : 'bg-gray-600 cursor-not-allowed'
-                                    } rounded`}
+                                    className={`p-2 w-1/2 ${fiftyFiftySelection.length === 2
+                                        ? 'bg-green-600 hover:bg-green-700'
+                                        : 'bg-gray-600 cursor-not-allowed'
+                                        } rounded`}
                                 >
                                     Apply 50:50
                                 </button>
@@ -421,11 +478,11 @@ export default function AdminPage() {
                             <h2 className="text-lg my-4">Controls</h2>
                             <div className="grid grid-cols-4 gap-2">
                                 {options.map((_, index) => (
-                                    <button 
-                                        key={`p${index}`} 
-                                        className={`p-2 rounded ${isOptionDisabled(index) 
-                                            ? 'bg-gray-400 opacity-50 cursor-not-allowed' 
-                                            : 'bg-blue-500 hover:bg-blue-600 active:scale-95 cursor-pointer'} transition-all`} 
+                                    <button
+                                        key={`p${index}`}
+                                        className={`p-2 rounded ${isOptionDisabled(index)
+                                            ? 'bg-gray-400 opacity-50 cursor-not-allowed'
+                                            : 'bg-blue-500 hover:bg-blue-600 active:scale-95 cursor-pointer'} transition-all`}
                                         onClick={() => !isOptionDisabled(index) && socket.emit("pick-answer", index)}
                                         disabled={isOptionDisabled(index)}
                                     >
@@ -433,10 +490,10 @@ export default function AdminPage() {
                                     </button>
                                 ))}
                                 {options.map((_, index) => (
-                                    <button 
-                                        key={`c${index}`} 
-                                        className={`p-2 rounded ${isOptionDisabled(index) 
-                                            ? 'bg-gray-400 opacity-50 cursor-not-allowed' 
+                                    <button
+                                        key={`c${index}`}
+                                        className={`p-2 rounded ${isOptionDisabled(index)
+                                            ? 'bg-gray-400 opacity-50 cursor-not-allowed'
                                             : 'bg-green-500 hover:bg-green-600 active:scale-95 cursor-pointer'} transition-all`}
                                         onClick={() => !isOptionDisabled(index) && socket.emit("mark-correct", index)}
                                         disabled={isOptionDisabled(index)}

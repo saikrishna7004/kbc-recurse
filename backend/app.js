@@ -20,8 +20,8 @@ let timerMaxValue = 30;
 let timerStarted = false;
 let highlightedOption = { index: null, type: null };
 let correctAnswer = null;
-let lastBroadcastTime = 0;
 let currentScreen = "logo";
+let questionNumber = 1;
 
 let lifelines = {
     "50-50": false,
@@ -63,6 +63,7 @@ io.on("connection", (socket) => {
     }
 
     socket.emit("change-screen", currentScreen);
+    socket.emit("update-question-number", { questionNumber });
 
     socket.emit("timer-state", {
         state: timerStarted ? (timerPaused ? "paused" : "running") : "stopped"
@@ -105,12 +106,38 @@ io.on("connection", (socket) => {
         io.emit("reset-highlights");
         io.emit("timer-state", { state: "stopped" });
         io.emit("change-screen", "question");
+        io.emit("update-question-number", { questionNumber });
         
         fiftyFiftyOptionsToHide = [];
         io.emit("apply-5050", []);
         
         activeLifeline = null;
         io.emit("set-active-lifeline", null);
+    });
+
+    socket.on("increment-question", () => {
+        if (questionNumber < 11) {
+            questionNumber++;
+            io.emit("update-question-number", { questionNumber });
+        }
+    });
+
+    socket.on("decrement-question", () => {
+        if (questionNumber > 1) {
+            questionNumber--;
+            io.emit("update-question-number", { questionNumber });
+        }
+    });
+
+    socket.on("set-prize-tier", (tier) => {
+        if (tier >= 1 && tier <= 11) {
+            io.emit("update-question-number", { questionNumber });
+        }
+    });
+
+    socket.on("reset-question-number", () => {
+        questionNumber = 1;
+        io.emit("update-question-number", { questionNumber });
     });
 
     socket.on("show-options", () => {
@@ -298,6 +325,7 @@ io.on("connection", (socket) => {
         io.emit("apply-5050", []);
         io.emit("set-active-lifeline", null);
         io.emit("change-screen", "logo");
+        io.emit("update-question-number", { questionNumber });
     });
 
     socket.on("play-audio", (type) => {
