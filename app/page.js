@@ -579,7 +579,7 @@ export default function DisplayPage() {
                                     return (
                                         <motion.div 
                                             key={key} 
-                                            className="flex flex-col items-center justify-center relative"
+                                            className={`flex flex-col items-center justify-center relative ${isUsed ? "!opacity-70" : "cursor-pointer"}`}
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: index * 0.2, duration: 0.5 }}
