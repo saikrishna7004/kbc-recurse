@@ -297,7 +297,7 @@ export default function DisplayPage() {
                 );
             case "lifeline":
                 return (
-                    <div className="flex flex-col items-center justify-center">
+                    <div className="flex flex-col items-center justify-center mb-12">
                         <h2 className="text-3xl font-bold text-yellow-400 mb-8">Lifelines</h2>
                         <div className="flex gap-8">
                             {Object.entries(icons).map(([key, icon]) => {
