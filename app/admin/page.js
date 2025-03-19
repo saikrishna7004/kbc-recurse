@@ -53,7 +53,7 @@ export default function AdminPage() {
     const icons = {
         '50-50': '/50-50.png',
         'Audience Poll': '/Audience Poll.png',
-        'Phone a friend': '/Phone A Friend.png',
+        'Phone a friend': '/Phone a friend.png',
     };
 
     useEffect(() => {
