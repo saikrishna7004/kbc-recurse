@@ -46,7 +46,7 @@ export default function AdminPage() {
         { id: "logo", name: "Logo" },
         { id: "question", name: "Question" },
         { id: "lifeline", name: "Lifelines" },
-        { id: "prize", name: "Prize Money" },
+        { id: "status", name: "Status" },
         { id: "blank", name: "Blank Screen" }
     ];
 
@@ -210,6 +210,7 @@ export default function AdminPage() {
     const applyFiftyFifty = () => {
         if (fiftyFiftySelection.length === 2) {
             socket.emit("select-fifty-fifty-options", fiftyFiftySelection);
+            handleContinueTimer();
         }
     };
 
@@ -241,7 +242,7 @@ export default function AdminPage() {
 
     return (
         <div className="flex flex-col-reverse lg:flex-none">
-            <div className="lg:absolute lg:right-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4">
+            <div className="lg:absolute lg:right-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4 self-center">
                 <div className="flex flex-col">
                     <h2 className="text-lg font-bold mb-3">Screen Control</h2>
                     {screens.map(screen => (
@@ -323,6 +324,11 @@ export default function AdminPage() {
                             </button>
                         </div>
 
+                        <div className="p-2 text-lg flex items-center justify-center">
+                            Timer Status: {timerState.toUpperCase()}
+                            <span className="ml-4">Current Time: {formatTimer()}</span>
+                        </div>
+
                         <div className="flex items-center">
                             <div className="p-2 bg-yellow-600 text-white font-bold">
                                 Prize: {prizeAmounts[11 - questionNumber]}
@@ -391,10 +397,6 @@ export default function AdminPage() {
                             >
                                 Set
                             </button>
-                            <div className="bg-gray-800 px-2 text-lg flex items-center justify-center">
-                                Timer Status: {timerState.toUpperCase()}
-                                <span className="ml-4">Current Time: {formatTimer()}</span>
-                            </div>
                         </div>
                     )}
 
@@ -441,7 +443,7 @@ export default function AdminPage() {
                                     <button
                                         key={index}
                                         onClick={() => handleFiftyFiftyOption(index)}
-                                        className={`p-3 border-2 ${fiftyFiftySelection.includes(index)
+                                        className={`p-3 border-2 cursor-pointer transition-all ${fiftyFiftySelection.includes(index)
                                             ? 'border-red-500 bg-red-900'
                                             : 'border-gray-400 bg-gray-800'
                                             } rounded`}
@@ -457,13 +459,13 @@ export default function AdminPage() {
                                     className={`p-2 w-1/2 ${fiftyFiftySelection.length === 2
                                         ? 'bg-green-600 hover:bg-green-700'
                                         : 'bg-gray-600 cursor-not-allowed'
-                                        } rounded`}
+                                        } rounded cursor-pointer transition-all`}
                                 >
                                     Apply 50:50
                                 </button>
                                 <button
                                     onClick={cancelLifeline}
-                                    className="p-2 w-1/2 bg-red-600 hover:bg-red-700 rounded"
+                                    className="p-2 w-1/2 bg-red-600 hover:bg-red-700 rounded cursor-pointer transition-all"
                                 >
                                     Cancel
                                 </button>
