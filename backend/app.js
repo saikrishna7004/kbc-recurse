@@ -311,10 +311,14 @@ io.on("connection", (socket) => {
             text: "",
             options: ["", "", "", ""],
         };
-        timerPaused = true;
+        timerValue = 60;
+        currentTimerValue = null;
         timerStartTime = null;
+        timerPaused = true;
         timerPausedAt = null;
+        timerMaxValue = 60;
         timerStarted = false;
+
         highlightedOption = { index: null, type: null };
         correctAnswer = null;
         io.emit("clear-question");
@@ -325,7 +329,7 @@ io.on("connection", (socket) => {
         io.emit("apply-5050", []);
         io.emit("set-active-lifeline", null);
         io.emit("change-screen", "logo");
-        io.emit("update-question-number", { questionNumber });
+        io.emit("update-question-number", { questionNumber: Math.min(11, questionNumber + 1) });
     });
 
     socket.on("play-audio", (type) => {

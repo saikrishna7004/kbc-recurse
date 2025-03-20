@@ -238,7 +238,12 @@ export default function AdminPage() {
         socket.emit("reset-question-number");
     };
 
-    const prizeAmounts = ["₹ 500", "₹ 400", "₹ 300", "₹ 200", "₹ 100", "₹ 50", "₹ 0", "₹ 0", "₹ 0", "₹ 0", "₹ 0"];
+    const handleReset = () => {
+        socket.emit("remove-question");
+        setCurrentTimer({ current: 0, max: 0 });
+    }
+
+    const prizeAmounts = ["₹500", "₹400", "₹300", "₹200", "₹100", "₹50", "₹0", "₹0", "₹0", "₹0", "₹0"];
 
     return (
         <div className="flex flex-col-reverse lg:flex-none">
@@ -417,7 +422,7 @@ export default function AdminPage() {
 
                         <button
                             className="w-full p-3 bg-orange-500 hover:bg-orange-600 active:scale-95 transition-all cursor-pointer"
-                            onClick={() => socket.emit("remove-question")}
+                            onClick={handleReset}
                         >
                             Reset
                         </button>

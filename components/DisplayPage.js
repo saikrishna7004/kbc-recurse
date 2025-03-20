@@ -311,7 +311,7 @@ export default function DisplayPage() {
         setSpecificLifeline(null);
     }, [currentScreen]);
 
-    const prizeAmounts = ["₹ 500", "₹ 400", "₹ 300", "₹ 200", "₹ 100", "₹ 50", "₹ 0", "₹ 0", "₹ 0", "₹ 0", "₹ 0"];
+    const prizeAmounts = ["₹500", "₹400", "₹300", "₹200", "₹100", "₹50", "₹0", "₹0", "₹0", "₹0", "₹0"];
 
     const renderScreen = () => {
         switch (currentScreen) {
@@ -324,10 +324,7 @@ export default function DisplayPage() {
             case "status":
                 return <Status prizeAmounts={prizeAmounts} questionNumber={questionNumber} />
             case "blank":
-                return (
-                    <div className="w-full h-screen bg-black">
-                    </div>
-                );
+                return <div className="w-full h-screen bg-black" />
             default:
                 return <Logo />
         }
