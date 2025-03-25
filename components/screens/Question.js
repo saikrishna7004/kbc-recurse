@@ -4,6 +4,18 @@ import { logoVariants, questionVariants, optionsContainerVariants, optionItemVar
 import SemiCircleProgressBar from 'react-progressbar-semicircle';
 import { useEffect, useRef, useState } from "react";
 
+const getGradientUrl = (bgColor, index) => {
+    if (bgColor.includes('from-green')) {
+        return `url(#greenGradient-${index})`;
+    } else if (bgColor.includes('from-yellow')) {
+        return `url(#yellowGradient-${index})`;
+    } else if (bgColor.includes('from-red')) {
+        return `url(#redGradient-${index})`;
+    } else {
+        return `url(#blueGradient-${index})`;
+    }
+};
+
 const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions, getBgColor }) => {
     const textRef = useRef(null);
     const [dashOffset, setDashOffset] = useState(100);
@@ -96,7 +108,73 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                     <span className="absolute left-0 top-[127px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
                     <span className="absolute left-0 top-[47px] w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 animate-shine"></span>
                     {question?.options?.map((option, index) => (
+                        <div key={index}>
                         <motion.div key={index} variants={optionItemVariants}>
+                            <div className="relative" style={{ height: '65px' }}>
+                                <svg className="absolute top-0 left-0 w-full h-full" viewBox="0 -3 100 106" preserveAspectRatio="none">
+                                    <defs>
+                                        <linearGradient id={`blueGradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stopColor="#03126F" />
+                                            <stop offset="50%" stopColor="#053EAE" />
+                                            <stop offset="100%" stopColor="#03126F" />
+                                        </linearGradient>
+                                        
+                                        <linearGradient id={`greenGradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stopColor="rgb(22, 101, 52)" /> {/* green-800 */}
+                                            <stop offset="50%" stopColor="rgb(21, 128, 61)" /> {/* green-700 */}
+                                            <stop offset="100%" stopColor="rgb(22, 101, 52)" /> {/* green-800 */}
+                                        </linearGradient>
+                                        
+                                        <linearGradient id={`yellowGradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stopColor="rgb(161, 98, 7)" /> {/* yellow-700 */}
+                                            <stop offset="50%" stopColor="rgb(202, 138, 4)" /> {/* yellow-600 */}
+                                            <stop offset="100%" stopColor="rgb(161, 98, 7)" /> {/* yellow-700 */}
+                                        </linearGradient>
+                                        
+                                        <linearGradient id={`redGradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" stopColor="rgb(153, 27, 27)" /> {/* red-800 */}
+                                            <stop offset="50%" stopColor="rgb(185, 28, 28)" /> {/* red-700 */}
+                                            <stop offset="100%" stopColor="rgb(153, 27, 27)" /> {/* red-800 */}
+                                        </linearGradient>
+                                    </defs>
+                                    
+                                    {/* Background fill */}
+                                    <polygon 
+                                        points="7,0 93,0 100,50 93,100 7,100 0,50" 
+                                        fill={getGradientUrl(getBgColor(index), index)}
+                                    />
+                                    
+                                    {/* Yellow border */}
+                                    <polygon 
+                                        points="7,0 93,0 100,50 93,100 7,100 0,50" 
+                                        fill="none"
+                                        stroke="#eab308" 
+                                        strokeWidth="3" 
+                                        strokeLinejoin="round"
+                                        strokeLinecap="round"
+                                        vectorEffect="non-scaling-stroke"
+                                    />
+                                </svg>
+                                
+                                <div className="relative z-10 h-full flex items-center justify-center px-6 text-center md:text-lg text-sm">
+                                    <AnimatePresence mode="wait">
+                                        {showOptions && (
+                                            <motion.span
+                                                key={`option-${index}-${option}`}
+                                                className="w-full h-full flex items-center justify-center"
+                                                initial="initial"
+                                                animate="animate"
+                                                exit="exit"
+                                                variants={optionTextVariants}
+                                            >
+                                                {hiddenOptions.includes(index) ? "" : option}
+                                            </motion.span>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </div>
+                        </motion.div>
+                        {/* <motion.div key={index} variants={optionItemVariants}>
                             <div className={`border-4 relative z-10 h-[65px] border-yellow-300 rounded-full py-2 px-4 text-center md:text-lg text-sm content-center ${getBgColor(index)} overflow-hidden`}>
                                 <AnimatePresence mode="wait">
                                     {showOptions && (
@@ -113,7 +191,8 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                                     )}
                                 </AnimatePresence>
                             </div>
-                        </motion.div>
+                        </motion.div> */}
+                    </div>
                     ))}
                     {
                         !(question?.options?.length > 0) && [1, 2, 3, 4].map((option, index) => (
