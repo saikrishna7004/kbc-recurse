@@ -140,13 +140,13 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                                     
                                     {/* Background fill */}
                                     <polygon 
-                                        points="10,0 90,0 100,50 90,100 10,100 0,50" 
+                                        points="7,0 93,0 100,50 93,100 7,100 0,50" 
                                         fill={getGradientUrl(getBgColor(index), index)}
                                     />
                                     
                                     {/* Yellow border */}
                                     <polygon 
-                                        points="10,0 90,0 100,50 90,100 10,100 0,50" 
+                                        points="7,0 93,0 100,50 93,100 7,100 0,50" 
                                         fill="none"
                                         stroke="#eab308" 
                                         strokeWidth="3" 
