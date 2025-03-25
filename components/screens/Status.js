@@ -1,8 +1,9 @@
 import { fadeInVariants, logoVariants } from '@/constants/animations';
 import { motion } from "framer-motion";
 import Image from 'next/image';
+import Lifeline from './Lifeline';
 
-const Status = ({ prizeAmounts, questionNumber }) => {
+const Status = ({ prizeAmounts, questionNumber, lifelineStatus, icons }) => {
     return (
         <div className="flex left-20">
             <div className="hidden sm:flex flex-col items-center justify-center w-3/4">
@@ -13,14 +14,7 @@ const Status = ({ prizeAmounts, questionNumber }) => {
                 >
                     <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={300} height={300} alt="Logo" />
                 </motion.div>
-                <motion.h1
-                    className="text-4xl font-bold text-yellow-400 mt-8"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.8 }}
-                >
-                    Kaun Banega Codepati
-                </motion.h1>  
+                <Lifeline icons={icons} specificLifeline={""} lifelineStatus={lifelineStatus} />
             </div>
             <motion.div className="flex flex-col w-full sm:w-1/2 mx-auto sm:mx-0" initial="hidden" animate="visible" variants={fadeInVariants}>
                 <motion.h2 
@@ -40,7 +34,7 @@ const Status = ({ prizeAmounts, questionNumber }) => {
                     <div className="space-y-1 ">
                         {prizeAmounts.map((amount, index) => {
                             const isCurrentQuestion = index === (11 - questionNumber);
-                            const isMilestone = index === 1 || index === 3;
+                            const isMilestone = 11-index === 4 || 11-index === 7 || 11-index === 10;
 
                             return (
                                 <motion.div

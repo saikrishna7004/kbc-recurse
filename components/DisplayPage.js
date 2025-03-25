@@ -1,14 +1,10 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import SemiCircleProgressBar from "react-progressbar-semicircle";
-import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import Logo from "./screens/Logo";
-import { fadeInVariants, logoVariants, optionItemVariants, optionsContainerVariants, optionTextVariants, questionVariants, textChangeVariants, timerVariants } from "@/constants/animations";
-import Question from "./screens/Question";
 import Lifeline from "./screens/Lifeline";
+import Logo from "./screens/Logo";
+import Question from "./screens/Question";
 import Status from "./screens/Status";
 
 const audioFiles = {
@@ -311,7 +307,7 @@ export default function DisplayPage() {
         setSpecificLifeline(null);
     }, [currentScreen]);
 
-    const prizeAmounts = ["₹500", "₹400", "₹300", "₹200", "₹100", "₹50", "₹0", "₹0", "₹0", "₹0", "₹0"];
+    const prizeAmounts = ["₹1000", "₹500", "₹400", "₹240", "₹180", "₹120", "₹80", "₹50", "₹30", "₹20", "₹10"];
 
     const renderScreen = () => {
         switch (currentScreen) {
@@ -322,7 +318,7 @@ export default function DisplayPage() {
             case "lifeline":
                 return <Lifeline icons={icons} lifelineStatus={lifelineStatus} specificLifeline={specificLifeline} />
             case "status":
-                return <Status prizeAmounts={prizeAmounts} questionNumber={questionNumber} />
+                return <Status prizeAmounts={prizeAmounts} questionNumber={questionNumber} lifelineStatus={lifelineStatus} icons={icons} />
             case "blank":
                 return <div className="w-full h-screen bg-black" />
             default:
