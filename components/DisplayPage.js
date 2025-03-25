@@ -331,7 +331,7 @@ export default function DisplayPage() {
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-black text-white">
+        <div className="flex items-center justify-center h-screen bg-black text-white">
             <div className="w-full text-center">
                 <div className="mx-auto">
                     {renderScreen()}
