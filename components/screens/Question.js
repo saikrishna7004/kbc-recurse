@@ -42,14 +42,9 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
             if (!ref || hiddenOptions.includes(index)) return;
             
             const container = ref;
-            const containerWidth = container.offsetWidth - 48; // Subtract padding for label
-            const text = question?.options[index] || "";
-            
-            // Start with a reasonable font size
             let fontSize = 24;
             container.style.fontSize = `${fontSize}px`;
-            
-            // Check if text overflows
+           
             while (container.scrollHeight > container.clientHeight && fontSize > 14) {
                 fontSize--;
                 container.style.fontSize = `${fontSize}px`;

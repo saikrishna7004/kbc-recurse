@@ -8,6 +8,7 @@ import Logo from "./screens/Logo";
 import Question from "./screens/Question";
 import SpinTheWheel from "./screens/SpinTheWheel";
 import Status from "./screens/Status";
+import { prizeAmounts } from "@/constants/main";
 
 const audioFiles = {
     correct: "/audio/Correct.mp3",
@@ -350,8 +351,6 @@ export default function DisplayPage() {
     useEffect(() => {
         setSpecificLifeline(null);
     }, [currentScreen]);
-
-    const prizeAmounts = ["₹1000", "₹500", "₹400", "₹240", "₹180", "₹120", "₹80", "₹50", "₹30", "₹20", "₹10"];
 
     const renderScreen = () => {
         switch (currentScreen) {

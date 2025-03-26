@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import Image from "next/image";
+import { prizeAmounts } from "@/constants/main";
 
 const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
     extraHeaders: {
@@ -47,8 +48,8 @@ export default function AdminPage() {
         { id: "question", name: "Question" },
         { id: "lifeline", name: "Lifelines" },
         { id: "status", name: "Status" },
+        { id: "spin", name: "Spin the Wheel" },
         { id: "blank", name: "Blank Screen" },
-        {id: "spin", name: "Spin the Wheel"}
     ];
 
     const icons = {
@@ -158,6 +159,7 @@ export default function AdminPage() {
 
     const handleSendQuestion = () => {
         if (validateQuestion()) {
+            socket.emit("play-audio", 'next')
             socket.emit("question-update", { text: question, options });
             setError("");
         }
@@ -244,17 +246,15 @@ export default function AdminPage() {
         setCurrentTimer({ current: 0, max: 0 });
     }
 
-    const prizeAmounts = ["₹500", "₹400", "₹300", "₹200", "₹100", "₹50", "₹0", "₹0", "₹0", "₹0", "₹0"];
-
     return (
         <div className="flex flex-col-reverse lg:flex-none">
             <div className="lg:absolute lg:right-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4 self-center">
                 <div className="flex flex-col">
-                    <h2 className="text-lg font-bold mb-3">Screen Control</h2>
+                    <h2 className="font-bold mb-3">Screen Control</h2>
                     {screens.map(screen => (
                         <button
                             key={screen.id}
-                            className={`p-2 cursor-pointer ${currentScreen === screen.id ? 'bg-yellow-400 hover:bg-yellow-500 text-black' : 'bg-blue-800 hover:bg-blue-700'} transition-all`}
+                            className={`p-2 text-sm cursor-pointer ${currentScreen === screen.id ? 'bg-yellow-400 hover:bg-yellow-500 text-black' : 'bg-blue-800 hover:bg-blue-700'} transition-all`}
                             onClick={() => handleScreenChange(screen.id)}
                         >
                             {screen.name}
@@ -262,7 +262,7 @@ export default function AdminPage() {
                     ))}
                 </div>
                 <div className="justify-items-center mt-4 mb-6">
-                    <h2 className="text-lg font-bold mb-2">Lifelines</h2>
+                    <h2 className="font-bold mb-2">Lifelines</h2>
                     <div className="flex flex-col justify-center gap-2 items-center">
                         {Object.entries(icons).map(([name, icon]) => (
                             <div key={name} className="relative">
@@ -291,7 +291,7 @@ export default function AdminPage() {
                         ))}
                     </div>
                     <button
-                        className="mt-2 p-2 bg-blue-700 text-white rounded hover:bg-blue-600 transition-all cursor-pointer"
+                        className="mt-2 p-2 text-sm bg-blue-700 text-white rounded hover:bg-blue-600 transition-all cursor-pointer"
                         onClick={resetLifelines}
                     >
                         Reset Lifelines
