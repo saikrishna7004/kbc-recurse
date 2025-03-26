@@ -4,23 +4,24 @@ import { useState } from "react";
 
 const SpinTheWheel = () => {
   const [options] = useState([
-    "Trip to Hawaii",
-    "$100 Gift Card",
-    "Wireless Headphones",
-    "Dinner for Two",
-    "Tech Gadget",
-    "Shopping Spree",
-    "Spa Day",
-    "Mystery Prize",
+    "Revive a lifeline",
+    "+₹50",
+    "+₹100",
+    "-₹25",
+    "-₹50",
+    "60s",
+    "45s",
   ]);
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(null);
 
   const spinWheel = () => {
     if (isSpinning) return;
     setIsSpinning(true);
+    setHighlightedIndex(null);
   
     const initialSpeed = 5000;
     const finalRotation =
@@ -39,13 +40,10 @@ const SpinTheWheel = () => {
         const optionIndex = Math.floor((360 - positiveAngle) / (360 / options.length)) % options.length;
         
         setSelectedOption(options[optionIndex]);
+        setHighlightedIndex(optionIndex);
         setIsSpinning(false);
       },
     });
-  };
-
-  const closeModal = () => {
-    setSelectedOption(null);
   };
 
   const getColorForIndex = (index) => {
@@ -63,7 +61,7 @@ const SpinTheWheel = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-neutral-900 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black p-4">
       <h1 className="text-4xl font-bold mb-8 text-center text-neutral-100">
         Spin the Wheel
       </h1>
@@ -88,22 +86,27 @@ const SpinTheWheel = () => {
         >
           {options.map((option, index) => {
             const angle = (index / options.length) * 360 + 180 / options.length;
+            const isHighlighted = index === highlightedIndex;
             return (
               <div
                 key={option}
-                className="absolute w-full h-full text-neutral-100 font-semibold text-sm"
+                className={`absolute w-full h-full text-neutral-100 font-semibold text-sm transition-all duration-500 ${
+                  isHighlighted ? 'scale-105 z-10' : ''
+                }`}
                 style={{
                   transform: `rotate(${angle}deg)`,
                   transformOrigin: "center",
                 }}
               >
                 <div
-                  className="absolute w-24 text-center flex flex-col items-center justify-center"
+                  className={`absolute w-24 text-center flex flex-col items-center justify-center ${
+                    isHighlighted ? 'text-xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : ''
+                  }`}
                   style={{
                     left: "50%",
                     top: "20%",
                     transform: "translateX(-50%) rotate(-90deg)",
-                    textShadow: "1px 1px 2px rgba(0,0,0,0.5)",
+                    textShadow: isHighlighted ? "0 0 10px rgba(255,255,255,0.8)" : "1px 1px 2px rgba(0,0,0,0.5)",
                     transformOrigin: "center",
                   }}
                 >
@@ -132,26 +135,6 @@ const SpinTheWheel = () => {
       >
         {isSpinning ? "Spinning..." : "Spin the Wheel"}
       </button>
-
-      {/* Result Modal */}
-      {selectedOption && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-neutral-800 p-8 rounded-lg shadow-2xl text-center relative z-50 min-w-[300px] border border-neutral-700">
-            <h2 className="text-2xl font-bold mb-4 text-neutral-100">
-              Congratulations!
-            </h2>
-            <p className="text-xl mb-6 text-neutral-300">
-              You won: <span className="font-semibold text-neutral-100">{selectedOption}</span>
-            </p>
-            <button
-              onClick={closeModal}
-              className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
