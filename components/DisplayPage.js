@@ -6,6 +6,7 @@ import Lifeline from "./screens/Lifeline";
 import Logo from "./screens/Logo";
 import Question from "./screens/Question";
 import Status from "./screens/Status";
+import SpinTheWheel from "./screens/SpinTheWheel";
 
 const audioFiles = {
     correct: "/audio/Correct.mp3",
@@ -321,6 +322,8 @@ export default function DisplayPage() {
                 return <Status prizeAmounts={prizeAmounts} questionNumber={questionNumber} lifelineStatus={lifelineStatus} icons={icons} />
             case "blank":
                 return <div className="w-full h-screen bg-black" />
+            case "spin":
+                return <SpinTheWheel/>
             default:
                 return <Logo />
         }
