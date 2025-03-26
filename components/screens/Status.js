@@ -1,23 +1,40 @@
+import { fadeInVariants, logoVariants } from '@/constants/animations';
 import { motion } from "framer-motion";
-import { fadeInVariants } from '@/constants/animations';
+import Image from 'next/image';
+import Lifeline from './Lifeline';
 
-const Status = ({ prizeAmounts, questionNumber }) => {
+const Status = ({ prizeAmounts, questionNumber, lifelineStatus, icons }) => {
     return (
-        <div>
-            <motion.div className="flex flex-col items-center justify-center" initial="hidden" animate="visible" variants={fadeInVariants}>
-                <motion.h2 className="text-3xl font-bold text-yellow-400 mb-6" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+        <div className="flex left-20">
+            <div className="hidden sm:flex flex-col items-center justify-center w-3/4">
+                <motion.div
+                    initial="hidden"
+                    animate="visible"
+                    variants={logoVariants}
+                >
+                    <Image className="mx-auto rounded-full mb-12" src="/logo.jpg" width={300} height={300} alt="Logo" />
+                </motion.div>
+                <Lifeline icons={icons} specificLifeline={""} lifelineStatus={lifelineStatus} />
+            </div>
+            <motion.div className="flex flex-col w-full sm:w-1/2 mx-auto sm:mx-0" initial="hidden" animate="visible" variants={fadeInVariants}>
+                <motion.h2 
+                    className="text-3xl font-bold text-yellow-400 w-full sm:w-1/2 my-3 self-start" 
+                    initial={{ opacity: 0, y: -20 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    transition={{ duration: 0.6 }}
+                >
                     Status
                 </motion.h2>
                 <motion.div
-                    className="border-4 border-yellow-300 rounded-lg p-4 bg-gradient-to-r from-[#03126F] via-[#053EAE] to-[#03126F] max-w-lg"
+                    className="border-4 border-yellow-300 rounded-lg p-4 bg-gradient-to-r from-[#03126F] via-[#053EAE] to-[#03126F] w-full sm:w-1/2"
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.7 }}
                 >
-                    <div className="space-y-1">
+                    <div className="space-y-1 ">
                         {prizeAmounts.map((amount, index) => {
                             const isCurrentQuestion = index === (11 - questionNumber);
-                            const isMilestone = index === 1 || index === 3;
+                            const isMilestone = 11-index === 4 || 11-index === 7 || 11-index === 10;
 
                             return (
                                 <motion.div

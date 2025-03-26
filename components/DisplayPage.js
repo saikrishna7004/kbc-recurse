@@ -1,14 +1,12 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
-import SemiCircleProgressBar from "react-progressbar-semicircle";
-import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
-import Logo from "./screens/Logo";
-import { fadeInVariants, logoVariants, optionItemVariants, optionsContainerVariants, optionTextVariants, questionVariants, textChangeVariants, timerVariants } from "@/constants/animations";
-import Question from "./screens/Question";
 import Lifeline from "./screens/Lifeline";
+import Logo from "./screens/Logo";
+import Question from "./screens/Question";
+import SpinTheWheel from "./screens/SpinTheWheel";
 import Status from "./screens/Status";
 
 const audioFiles = {
@@ -28,6 +26,41 @@ const icons = {
     '50-50': '/50-50.png',
     'Audience Poll': '/Audience Poll.png',
     'Phone a friend': '/Phone a friend.png',
+};
+
+const LightEffect = ({ type }) => {
+    return (
+        <AnimatePresence>
+            {type && (
+                <motion.div
+                    className={`fixed inset-0 pointer-events-none z-50 ${
+                        type === "correct" ? "bg-green-500/20" : "bg-red-500/20"
+                    }`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1 }}
+                >
+                    <motion.div
+                        className={`absolute inset-0 ${
+                            type === "correct" ? "bg-green-500/10" : "bg-red-500/10"
+                        }`}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ 
+                            scale: [1, 1.2, 1],
+                            opacity: [0.5, 0.8, 0.5]
+                        }}
+                        exit={{ scale: 1.2, opacity: 0 }}
+                        transition={{ 
+                            duration: 5,
+                            times: [0, 0.5, 1],
+                            ease: "easeInOut"
+                        }}
+                    />
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
 };
 
 export default function DisplayPage() {
@@ -65,6 +98,7 @@ export default function DisplayPage() {
     const [hiddenOptions, setHiddenOptions] = useState([]);
     const [specificLifeline, setSpecificLifeline] = useState(null);
     const [questionNumber, setQuestionNumber] = useState(1);
+    const [lightEffect, setLightEffect] = useState(null);
 
     useEffect(() => {
         socket.on("display-question", (data) => {
@@ -89,19 +123,25 @@ export default function DisplayPage() {
         socket.on("mark-correct", (index) => {
             setSelectedStatus({ index, status: "correct" });
             setCorrectAnswer(null);
+            setLightEffect("correct");
             playAudio("correct");
+            setTimeout(() => setLightEffect(null), 5000);
         });
 
         socket.on("mark-wrong", (index) => {
             setSelectedStatus({ index, status: "wrong" });
             setCorrectAnswer(null);
+            setLightEffect("wrong");
             playAudio("wrong");
+            setTimeout(() => setLightEffect(null), 5000);
         });
 
         socket.on("show-correct-answer", (data) => {
             setSelectedStatus({ index: data.selectedIndex, status: "selected" });
             setCorrectAnswer(data.correctIndex);
+            setLightEffect("wrong");
             playAudio("wrong");
+            setTimeout(() => setLightEffect(null), 5000);
         });
 
         socket.on("reset-highlights", () => {
@@ -311,7 +351,7 @@ export default function DisplayPage() {
         setSpecificLifeline(null);
     }, [currentScreen]);
 
-    const prizeAmounts = ["₹500", "₹400", "₹300", "₹200", "₹100", "₹50", "₹0", "₹0", "₹0", "₹0", "₹0"];
+    const prizeAmounts = ["₹1000", "₹500", "₹400", "₹240", "₹180", "₹120", "₹80", "₹50", "₹30", "₹20", "₹10"];
 
     const renderScreen = () => {
         switch (currentScreen) {
@@ -322,9 +362,11 @@ export default function DisplayPage() {
             case "lifeline":
                 return <Lifeline icons={icons} lifelineStatus={lifelineStatus} specificLifeline={specificLifeline} />
             case "status":
-                return <Status prizeAmounts={prizeAmounts} questionNumber={questionNumber} />
+                return <Status prizeAmounts={prizeAmounts} questionNumber={questionNumber} lifelineStatus={lifelineStatus} icons={icons} />
             case "blank":
                 return <div className="w-full h-screen bg-black" />
+            case "spin":
+                return <SpinTheWheel/>
             default:
                 return <Logo />
         }
@@ -332,6 +374,7 @@ export default function DisplayPage() {
 
     return (
         <div className="flex items-center justify-center h-screen bg-black text-white">
+            <LightEffect type={lightEffect} />
             <div className="w-full text-center">
                 <div className="mx-auto">
                     {renderScreen()}

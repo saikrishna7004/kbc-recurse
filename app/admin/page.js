@@ -47,7 +47,8 @@ export default function AdminPage() {
         { id: "question", name: "Question" },
         { id: "lifeline", name: "Lifelines" },
         { id: "status", name: "Status" },
-        { id: "blank", name: "Blank Screen" }
+        { id: "blank", name: "Blank Screen" },
+        {id: "spin", name: "Spin the Wheel"}
     ];
 
     const icons = {

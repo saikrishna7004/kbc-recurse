@@ -1,8 +1,8 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { logoVariants, optionItemVariants, optionsContainerVariants, optionTextVariants, questionVariants, textChangeVariants, timerVariants } from '@/constants/animations';
+import { AnimatePresence, motion } from "framer-motion";
 import Image from 'next/image';
-import { logoVariants, questionVariants, optionsContainerVariants, optionItemVariants, optionTextVariants, textChangeVariants, timerVariants } from '@/constants/animations';
-import SemiCircleProgressBar from 'react-progressbar-semicircle';
 import { useEffect, useRef, useState } from "react";
+import SemiCircleProgressBar from 'react-progressbar-semicircle';
 
 const getGradientUrl = (bgColor, index) => {
     if (bgColor.includes('from-green')) {
@@ -18,7 +18,9 @@ const getGradientUrl = (bgColor, index) => {
 
 const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions, getBgColor }) => {
     const textRef = useRef(null);
+    const optionRefs = useRef([]);
     const [dashOffset, setDashOffset] = useState(100);
+
     useEffect(() => {
         const progress = ((timer.max - timer.current) / timer.max) * 100;
         setDashOffset(progress);
@@ -35,14 +37,41 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
         container.style.fontSize = `${fontSize}px`;
     };
 
+    const adjustOptionFontSize = () => {
+        optionRefs.current.forEach((ref, index) => {
+            if (!ref || hiddenOptions.includes(index)) return;
+            
+            const container = ref;
+            const containerWidth = container.offsetWidth - 48; // Subtract padding for label
+            const text = question?.options[index] || "";
+            
+            // Start with a reasonable font size
+            let fontSize = 24;
+            container.style.fontSize = `${fontSize}px`;
+            
+            // Check if text overflows
+            while (container.scrollHeight > container.clientHeight && fontSize > 14) {
+                fontSize--;
+                container.style.fontSize = `${fontSize}px`;
+            }
+        });
+    };
+
     useEffect(() => {
         adjustFontSize();
-        window.addEventListener('resize', adjustFontSize);
+        adjustOptionFontSize();
+        window.addEventListener('resize', () => {
+            adjustFontSize();
+            adjustOptionFontSize();
+        });
 
         return () => {
             window.removeEventListener('resize', adjustFontSize);
+            window.removeEventListener('resize', adjustOptionFontSize);
         };
-    }, [question]);
+    }, [question, hiddenOptions]);
+
+    const optionLabels = ['A', 'B', 'C', 'D'];
 
     return (
         <div>
@@ -167,31 +196,19 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                                                 exit="exit"
                                                 variants={optionTextVariants}
                                             >
-                                                {hiddenOptions.includes(index) ? "" : option}
+                                                <span className="absolute left-6 font-bold text-lg">{optionLabels[index]}.</span>
+                                                <span 
+                                                    ref={el => optionRefs.current[index] = el}
+                                                    className="w-full pl-12 pr-4 break-words whitespace-normal"
+                                                >
+                                                    {hiddenOptions.includes(index) ? "" : option}
+                                                </span>
                                             </motion.span>
                                         )}
                                     </AnimatePresence>
                                 </div>
                             </div>
                         </motion.div>
-                        {/* <motion.div key={index} variants={optionItemVariants}>
-                            <div className={`border-4 relative z-10 h-[65px] border-yellow-300 rounded-full py-2 px-4 text-center md:text-lg text-sm content-center ${getBgColor(index)} overflow-hidden`}>
-                                <AnimatePresence mode="wait">
-                                    {showOptions && (
-                                        <motion.span
-                                            key={`option-${index}-${option}`}
-                                            className="w-full h-full flex items-center justify-center"
-                                            initial="initial"
-                                            animate="animate"
-                                            exit="exit"
-                                            variants={optionTextVariants}
-                                        >
-                                            {hiddenOptions.includes(index) ? "" : option}
-                                        </motion.span>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-                        </motion.div> */}
                     </div>
                     ))}
                     {
@@ -201,7 +218,7 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                                     onClick={() => handleOptionClick(index)}
                                     className={`border-4 relative z-10 h-[52px] border-yellow-300 rounded-full py-2 px-4 ${hiddenOptions.includes(index) ? 'opacity-30' : 'cursor-pointer'}`}
                                 >
-                                    {showOptions ? option : ""}
+                                    {showOptions ? `${optionLabels[index]}. ${option}` : ""}
                                 </div>
                             </motion.div>
                         ))
