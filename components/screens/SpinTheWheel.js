@@ -5,9 +5,9 @@ import { useState } from "react";
 const SpinTheWheel = () => {
     const [options] = useState([
         "Revive a lifeline",
-        "+₹50",
-        "+₹100",
-        "-₹50",
+        "+ ₹50",
+        "+ ₹100",
+        "- ₹50",
     ]);
 
     const [isSpinning, setIsSpinning] = useState(false);
@@ -30,8 +30,10 @@ const SpinTheWheel = () => {
             onComplete: () => {
                 const normalizedAngle = finalRotation % 360;
                 const positiveAngle = normalizedAngle < 0 ? normalizedAngle + 360 : normalizedAngle;
-                const optionIndex = Math.floor((360 - positiveAngle) / (360 / options.length)) % options.length;
-                setHighlightedIndex(optionIndex);
+                const adjustedAngle = (positiveAngle + 90) % 360;
+                const baseIndex = Math.floor(((360 - adjustedAngle) % 360) / (360 / options.length)) % options.length;
+                const oppositeIndex = (baseIndex + Math.floor(options.length / 2)) % options.length;
+                setHighlightedIndex(oppositeIndex);
                 setIsSpinning(false);
             },
         });
@@ -80,7 +82,7 @@ const SpinTheWheel = () => {
                         return (
                             <div
                                 key={option}
-                                className={`absolute w-full h-full text-neutral-100 font-semibold text-sm transition-all duration-500 ${isHighlighted ? 'scale-105 z-10' : ''
+                                className={`absolute w-full h-full text-neutral-100 font-semibold text-base transition-all duration-500 ${isHighlighted ? 'scale-105 z-10' : ''
                                     }`}
                                 style={{
                                     transform: `rotate(${angle}deg)`,
@@ -88,7 +90,7 @@ const SpinTheWheel = () => {
                                 }}
                             >
                                 <div
-                                    className={`absolute w-24 text-center flex flex-col items-center justify-center ${isHighlighted ? 'text-xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : ''
+                                    className={`absolute w-24 text-center flex flex-col items-center justify-center ${isHighlighted ? 'text-2xl font-bold text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]' : ''
                                         }`}
                                     style={{
                                         left: "50%",
@@ -105,7 +107,7 @@ const SpinTheWheel = () => {
                     })}
                 </motion.div>
 
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-16 border-l-transparent border-r-transparent border-t-neutral-600 z-10"/>
+                <div className="absolute right-0 top-1/2 transform -translate-y-1/2 w-0 h-0 border-t-8 border-b-8 border-r-16 border-t-transparent border-b-transparent border-r-neutral-600 z-10" />
             </div>
 
             <button
