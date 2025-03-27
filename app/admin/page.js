@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { io } from "socket.io-client";
 import Image from "next/image";
 import { prizeAmounts } from "@/constants/main";
+import Link from "next/link";
 
 const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000", {
     extraHeaders: {
@@ -246,8 +247,65 @@ export default function AdminPage() {
         setCurrentTimer({ current: 0, max: 0 });
     }
 
+    const getQuestion = async (level) => {
+        try {
+            const data = await fetch(`/api/questions?level=${level}&unused=true&random=true`);
+            const response = await data.json();
+            
+            if (response.success && response.data && response.data.length > 0) {
+                const result = response.data[0];
+                setQuestion(result.text);
+                
+                const optionsArray = [...result.options];
+                const correctOption = optionsArray[result.correctOption];
+                
+                await fetch(`/api/questions/${result._id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ...result, used: true })
+                });
+                
+                setOptions(optionsArray);
+                return;
+            }
+            
+            const difficulty = level === 1 ? "easy" : level === 2 ? "medium" : "hard";
+            const apiData = await fetch(`https://opentdb.com/api.php?amount=1&difficulty=${difficulty}&type=multiple`);
+            const apiResponse = await apiData.json();
+            const apiResult = apiResponse.results[0];
+            setQuestion(apiResult.question);
+            setOptions([...apiResult.incorrect_answers, apiResult.correct_answer].sort(() => Math.random() - 0.5));
+        } catch (error) {
+            console.error("Error fetching question:", error);
+        }
+    }
+
     return (
         <div className="flex flex-col-reverse lg:flex-none">
+            <div className="lg:absolute lg:left-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4 self-center">
+                <div className="flex flex-col">
+                    <h2 className="font-bold mb-3">Questions</h2>
+                    <Link
+                        className="py-2 px-4 text-sm bg-blue-800 hover:bg-yellow-400 hover:text-black transition-all cursor-pointer mb-2"
+                        href="/questions"
+                        target="_blank"
+                    >
+                        Manage Questions
+                    </Link>
+                    {[1, 2, 3, 4].map((value) => (
+                        <button
+                            key={value}
+                            className="py-2 px-4 text-sm bg-blue-800 hover:bg-yellow-400 hover:text-black transition-all cursor-pointer"
+                            onClick={() => getQuestion(value)}
+                        >
+                            Level {value}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <div className="lg:absolute lg:right-0 lg:top-0 bg-black flex flex-col flex-wrap gap-2 p-4 self-center">
                 <div className="flex flex-col">
                     <h2 className="font-bold mb-3">Screen Control</h2>
@@ -300,10 +358,10 @@ export default function AdminPage() {
             </div>
 
             <div className="flex items-center justify-center min-h-screen bg-black text-white">
-                <div className="w-full max-w-5xl bg-gray-900 px-6 py-4 shadow-lg text-center border-4 border-yellow-500">
+                <div className="w-full max-w-5xl bg-gray-900 lg:px-6 px-2 py-4 shadow-lg text-center border-4 border-yellow-500">
                     <h1 className="text-2xl font-bold text-yellow-500 mb-4">Admin Panel</h1>
 
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-wrap justify-between items-center mb-2">
                         <div className="flex items-center">
                             <button
                                 onClick={handleDecrementQuestion}
@@ -316,7 +374,7 @@ export default function AdminPage() {
                             </button>
 
                             <div className="px-4 py-2 bg-gray-800 text-white font-bold">
-                                Question {questionNumber}/11
+                                Q {questionNumber}/11
                             </div>
 
                             <button
@@ -328,15 +386,8 @@ export default function AdminPage() {
                                     <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                                 </svg>
                             </button>
-                        </div>
 
-                        <div className="p-2 text-lg flex items-center justify-center">
-                            Timer Status: {timerState.toUpperCase()}
-                            <span className="ml-4">Current Time: {formatTimer()}</span>
-                        </div>
-
-                        <div className="flex items-center">
-                            <div className="p-2 bg-yellow-600 text-white font-bold">
+                            <div className="ms-4 p-2 bg-yellow-600 text-white font-bold">
                                 Prize: {prizeAmounts[11 - questionNumber]}
                             </div>
                             <button
@@ -347,6 +398,11 @@ export default function AdminPage() {
                                     <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
                                 </svg>
                             </button>
+                        </div>
+
+                        <div className="p-2 text-lg flex items-center justify-center">
+                            Timer Status: {timerState.toUpperCase()}
+                            <span className="ml-4">Current Time: {formatTimer()}</span>
                         </div>
                     </div>
 

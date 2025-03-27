@@ -1,6 +1,5 @@
 import DisplayPage from '@/components/DisplayPage'
 
-
 const DisplayPageMain = () => {
     return (
         <div>

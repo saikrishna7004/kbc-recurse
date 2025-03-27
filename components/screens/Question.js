@@ -115,9 +115,8 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                             animate="animate"
                             exit="exit"
                             variants={textChangeVariants}
-                        >
-                            {question?.text || ""}
-                        </motion.span>
+                            dangerouslySetInnerHTML={{ __html: question?.text || "" }}
+                        />
                     </AnimatePresence>
                 </span>
             </motion.div>
@@ -144,31 +143,29 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                                         </linearGradient>
                                         
                                         <linearGradient id={`greenGradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" stopColor="rgb(22, 101, 52)" /> {/* green-800 */}
-                                            <stop offset="50%" stopColor="rgb(21, 128, 61)" /> {/* green-700 */}
-                                            <stop offset="100%" stopColor="rgb(22, 101, 52)" /> {/* green-800 */}
+                                            <stop offset="0%" stopColor="rgb(22, 101, 52)" />
+                                            <stop offset="50%" stopColor="rgb(21, 128, 61)" />
+                                            <stop offset="100%" stopColor="rgb(22, 101, 52)" />
                                         </linearGradient>
                                         
                                         <linearGradient id={`yellowGradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" stopColor="rgb(161, 98, 7)" /> {/* yellow-700 */}
-                                            <stop offset="50%" stopColor="rgb(202, 138, 4)" /> {/* yellow-600 */}
-                                            <stop offset="100%" stopColor="rgb(161, 98, 7)" /> {/* yellow-700 */}
+                                            <stop offset="0%" stopColor="rgb(161, 98, 7)" />
+                                            <stop offset="50%" stopColor="rgb(202, 138, 4)" />
+                                            <stop offset="100%" stopColor="rgb(161, 98, 7)" />
                                         </linearGradient>
                                         
                                         <linearGradient id={`redGradient-${index}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" stopColor="rgb(153, 27, 27)" /> {/* red-800 */}
-                                            <stop offset="50%" stopColor="rgb(185, 28, 28)" /> {/* red-700 */}
-                                            <stop offset="100%" stopColor="rgb(153, 27, 27)" /> {/* red-800 */}
+                                            <stop offset="0%" stopColor="rgb(153, 27, 27)" />
+                                            <stop offset="50%" stopColor="rgb(185, 28, 28)" />
+                                            <stop offset="100%" stopColor="rgb(153, 27, 27)" />
                                         </linearGradient>
                                     </defs>
                                     
-                                    {/* Background fill */}
                                     <polygon 
                                         points="7,0 93,0 100,50 93,100 7,100 0,50" 
                                         fill={getGradientUrl(getBgColor(index), index)}
                                     />
                                     
-                                    {/* Yellow border */}
                                     <polygon 
                                         points="7,0 93,0 100,50 93,100 7,100 0,50" 
                                         fill="none"
@@ -194,10 +191,9 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                                                 <span className="absolute left-6 font-bold text-lg">{optionLabels[index]}.</span>
                                                 <span 
                                                     ref={el => optionRefs.current[index] = el}
-                                                    className="w-full pl-12 pr-4 break-words whitespace-normal"
-                                                >
-                                                    {hiddenOptions.includes(index) ? "" : option}
-                                                </span>
+                                                    className="w-full pl-6 pr-4 break-words whitespace-normal"
+                                                    dangerouslySetInnerHTML={{ __html: hiddenOptions.includes(index) ? "" : option }}
+                                                />
                                             </motion.span>
                                         )}
                                     </AnimatePresence>
@@ -212,6 +208,7 @@ const Question = ({ question, questionNumber, timer, hiddenOptions, showOptions,
                                 <div
                                     onClick={() => handleOptionClick(index)}
                                     className={`border-4 relative z-10 h-[52px] border-yellow-300 rounded-full py-2 px-4 ${hiddenOptions.includes(index) ? 'opacity-30' : 'cursor-pointer'}`}
+                                    dangerouslySetInnerHTML={{ __html: option }}
                                 >
                                     {showOptions ? `${optionLabels[index]}. ${option}` : ""}
                                 </div>
