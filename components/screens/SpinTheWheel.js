@@ -7,10 +7,7 @@ const SpinTheWheel = () => {
         "Revive a lifeline",
         "+₹50",
         "+₹100",
-        "-₹25",
         "-₹50",
-        "60s",
-        "45s",
     ]);
 
     const [isSpinning, setIsSpinning] = useState(false);

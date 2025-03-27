@@ -28,7 +28,6 @@ let answerRevealed = false;
 let lifelines = {
     "50-50": false,
     "Audience Poll": false,
-    "Phone a friend": false
 };
 
 let fiftyFiftyOptionsToHide = [];
