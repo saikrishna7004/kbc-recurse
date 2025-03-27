@@ -10,6 +10,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 let currentQuestion = {
     text: "",
     options: ["", "", "", ""],
+    correctOption: null
 };
 let timerValue = 30;
 let currentTimerValue = null;
@@ -22,6 +23,7 @@ let highlightedOption = { index: null, type: null };
 let correctAnswer = null;
 let currentScreen = "logo";
 let questionNumber = 1;
+let answerRevealed = false;
 
 let lifelines = {
     "50-50": false,
@@ -81,7 +83,8 @@ io.on("connection", (socket) => {
 
     socket.on("question-update", (data) => {
         if (!data.text || !data.text.trim() ||
-            !data.options || data.options.some(opt => !opt || !opt.trim())) {
+            !data.options || data.options.some(opt => !opt || !opt.trim()) || 
+            data.correctOption === undefined) {
             return;
         }
 
@@ -89,11 +92,12 @@ io.on("connection", (socket) => {
         currentTimerValue = timerValue;
         
         highlightedOption = { index: null, type: null };
-        correctAnswer = null;
+        correctAnswer = data.correctOption;
         timerPaused = true;
         timerPausedAt = null;
         timerStartTime = null;
         timerStarted = false;
+        answerRevealed = false;
         
         currentQuestion = {
             ...data,
@@ -102,6 +106,8 @@ io.on("connection", (socket) => {
             showOptions: false
         };
 
+        questionNumber = Math.min(11, questionNumber + 1);
+        
         io.emit("display-question", currentQuestion);
         io.emit("reset-highlights");
         io.emit("timer-state", { state: "stopped" });
@@ -165,7 +171,6 @@ io.on("connection", (socket) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
             if (!fiftyFiftyOptionsToHide.includes(index)) {
                 highlightedOption = { index, type: "selected" };
-                correctAnswer = null;
                 
                 io.emit("reset-highlights");
                 io.emit("highlight-answer", index);
@@ -178,41 +183,53 @@ io.on("connection", (socket) => {
     socket.on("mark-correct", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
             if (!fiftyFiftyOptionsToHide.includes(index)) {
+                highlightedOption = { index, type: "correct" };
                 correctAnswer = index;
+                answerRevealed = true;
                 
-                if (highlightedOption.index !== null && highlightedOption.type === "selected") {
-                    if (highlightedOption.index === index) {
-                        highlightedOption = { index, type: "correct" };
-                        io.emit("reset-highlights");
-                        io.emit("mark-correct", index);
-                        io.emit("trigger-audio", "correct");
-                    } else {
-                        io.emit("reset-highlights");
-                        io.emit("show-correct-answer", {
-                            selectedIndex: highlightedOption.index,
-                            correctIndex: index
-                        });
-                        io.emit("trigger-audio", "wrong");
-                    }
-                } else {
-                    highlightedOption = { index, type: "correct" };
-                    io.emit("reset-highlights");
-                    io.emit("mark-correct", index);
-                    io.emit("trigger-audio", "correct");
-                }
+                io.emit("reset-highlights");
+                io.emit("mark-correct", index);
+                io.emit("trigger-audio", "correct");
             }
         }
     });
 
     socket.on("mark-wrong", (index) => {
         if (currentQuestion && index >= 0 && index < currentQuestion.options.length) {
-            if (!fiftyFiftyOptionsToHide.includes(index) && correctAnswer === null) {
+            if (!fiftyFiftyOptionsToHide.includes(index)) {
                 highlightedOption = { index, type: "wrong" };
                 io.emit("reset-highlights");
                 io.emit("mark-wrong", index);
                 io.emit("trigger-audio", "wrong");
             }
         }
+    });
+
+    socket.on("reveal-answer", () => {
+        if (!currentQuestion || correctAnswer === null) return;
+
+        if (highlightedOption.index !== null && highlightedOption.type === "selected") {
+            if (highlightedOption.index === correctAnswer) {
+                highlightedOption = { index: correctAnswer, type: "correct" };
+                io.emit("reset-highlights");
+                io.emit("mark-correct", correctAnswer);
+                io.emit("trigger-audio", "correct");
+            } else {
+                io.emit("reset-highlights");
+                io.emit("show-correct-answer", {
+                    selectedIndex: highlightedOption.index,
+                    correctIndex: correctAnswer
+                });
+                io.emit("trigger-audio", "wrong");
+            }
+        } else {
+            highlightedOption = { index: correctAnswer, type: "correct" };
+            io.emit("reset-highlights");
+            io.emit("mark-correct", correctAnswer);
+            io.emit("trigger-audio", "correct");
+        }
+        
+        answerRevealed = true;
     });
 
     socket.on("reset-timer", () => {
@@ -257,7 +274,10 @@ io.on("connection", (socket) => {
             io.emit("show-specific-lifeline", lifeline);
             
             if (lifeline === "50-50") {
-                io.emit("prepare-fifty-fifty", Array.from(Array(4).keys()));
+                io.emit("prepare-fifty-fifty", {
+                    availableOptions: Array.from(Array(4).keys()),
+                    correctOption: correctAnswer
+                });
             } else {
                 lifelines[lifeline] = true;
                 io.emit("update-lifelines", lifelines);
@@ -267,7 +287,7 @@ io.on("connection", (socket) => {
     });
     
     socket.on("select-fifty-fifty-options", (optionsToHide) => {
-        if (optionsToHide.length === 2 && activeLifeline === "50-50") {
+        if (optionsToHide.length === 2 && activeLifeline === "50-50" && !optionsToHide.includes(correctAnswer)) {
             fiftyFiftyOptionsToHide = optionsToHide;
             lifelines["50-50"] = true;
             
@@ -310,6 +330,7 @@ io.on("connection", (socket) => {
         currentQuestion = {
             text: "",
             options: ["", "", "", ""],
+            correctOption: null
         };
         timerValue = 60;
         currentTimerValue = null;
@@ -318,6 +339,7 @@ io.on("connection", (socket) => {
         timerPausedAt = null;
         timerMaxValue = 60;
         timerStarted = false;
+        answerRevealed = false;
 
         highlightedOption = { index: null, type: null };
         correctAnswer = null;
@@ -329,7 +351,6 @@ io.on("connection", (socket) => {
         io.emit("apply-5050", []);
         io.emit("set-active-lifeline", null);
         io.emit("change-screen", "logo");
-        io.emit("update-question-number", { questionNumber: Math.min(11, questionNumber + 1) });
     });
 
     socket.on("play-audio", (type) => {

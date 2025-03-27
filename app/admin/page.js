@@ -14,6 +14,7 @@ const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5000"
 export default function AdminPage() {
     const [question, setQuestion] = useState("");
     const [options, setOptions] = useState(["", "", "", ""]);
+    const [correctOption, setCorrectOption] = useState(0);
     const [timer, setTimer] = useState(30);
     const [currentTimer, setCurrentTimer] = useState({ current: null, max: null });
     const [timerState, setTimerState] = useState("stopped");
@@ -28,6 +29,7 @@ export default function AdminPage() {
     const [fiftyFiftySelection, setFiftyFiftySelection] = useState([]);
     const [hiddenOptions, setHiddenOptions] = useState([]);
     const [questionNumber, setQuestionNumber] = useState(1);
+    const [fiftyFiftyCorrectOption, setFiftyFiftyCorrectOption] = useState(null);
 
     const audios = {
         correct: "Correct",
@@ -94,8 +96,12 @@ export default function AdminPage() {
 
         socket.on("set-active-lifeline", (lifeline) => {
             setActiveLifeline(lifeline);
-            if (!lifeline) {
+            if (lifeline === "50-50") {
+                // Store the current correct option when 50-50 is activated
+                setFiftyFiftyCorrectOption(parseInt(correctOption));
+            } else if (!lifeline) {
                 setFiftyFiftySelection([]);
+                setFiftyFiftyCorrectOption(null);
             }
         });
 
@@ -161,7 +167,11 @@ export default function AdminPage() {
     const handleSendQuestion = () => {
         if (validateQuestion()) {
             socket.emit("play-audio", 'next')
-            socket.emit("question-update", { text: question, options });
+            socket.emit("question-update", { 
+                text: question, 
+                options,
+                correctOption: parseInt(correctOption)
+            });
             setError("");
         }
     };
@@ -201,6 +211,9 @@ export default function AdminPage() {
 
     const handleFiftyFiftyOption = (index) => {
         if (activeLifeline === "50-50") {
+            // Use the stored correct option value instead of the current state
+            if (index === fiftyFiftyCorrectOption) return;
+            
             if (fiftyFiftySelection.includes(index)) {
                 setFiftyFiftySelection(fiftyFiftySelection.filter(i => i !== index));
             } else {
@@ -247,6 +260,10 @@ export default function AdminPage() {
         setCurrentTimer({ current: 0, max: 0 });
     }
 
+    const revealAnswer = () => {
+        socket.emit("reveal-answer");
+    };
+
     const getQuestion = async (level) => {
         try {
             const data = await fetch(`/api/questions?level=${level}&unused=true&random=true`);
@@ -255,9 +272,8 @@ export default function AdminPage() {
             if (response.success && response.data && response.data.length > 0) {
                 const result = response.data[0];
                 setQuestion(result.text);
-                
-                const optionsArray = [...result.options];
-                const correctOption = optionsArray[result.correctOption];
+                setOptions([...result.options]);
+                setCorrectOption(result.correctOption);
                 
                 await fetch(`/api/questions/${result._id}`, {
                     method: 'PUT',
@@ -266,8 +282,6 @@ export default function AdminPage() {
                     },
                     body: JSON.stringify({ ...result, used: true })
                 });
-                
-                setOptions(optionsArray);
                 return;
             }
             
@@ -275,8 +289,14 @@ export default function AdminPage() {
             const apiData = await fetch(`https://opentdb.com/api.php?amount=1&difficulty=${difficulty}&type=multiple`);
             const apiResponse = await apiData.json();
             const apiResult = apiResponse.results[0];
+            
             setQuestion(apiResult.question);
-            setOptions([...apiResult.incorrect_answers, apiResult.correct_answer].sort(() => Math.random() - 0.5));
+            
+            const allOptions = [...apiResult.incorrect_answers, apiResult.correct_answer]
+                .sort(() => Math.random() - 0.5);
+            
+            setOptions(allOptions);
+            setCorrectOption(allOptions.indexOf(apiResult.correct_answer));
         } catch (error) {
             console.error("Error fetching question:", error);
         }
@@ -416,17 +436,28 @@ export default function AdminPage() {
 
                     <div className="grid grid-cols-2 gap-2">
                         {options.map((opt, index) => (
-                            <input
-                                key={index}
-                                className="w-full p-2 mb-2 text-lg bg-gray-800"
-                                placeholder={`Option ${index + 1}`}
-                                value={opt}
-                                onChange={(e) => {
-                                    const newOptions = [...options];
-                                    newOptions[index] = e.target.value;
-                                    setOptions(newOptions);
-                                }}
-                            />
+                            <div key={index} className="relative w-full">
+                                <input
+                                    className={`w-full p-2 mb-2 text-lg ${parseInt(correctOption) === index ? 'bg-green-800 border-2 border-green-500' : 'bg-gray-800'}`}
+                                    placeholder={`Option ${index + 1}`}
+                                    value={opt}
+                                    onChange={(e) => {
+                                        const newOptions = [...options];
+                                        newOptions[index] = e.target.value;
+                                        setOptions(newOptions);
+                                    }}
+                                />
+                                <div className="absolute top-0 right-0 h-full flex items-center mr-1">
+                                    <input 
+                                        type="radio" 
+                                        name="correctOption" 
+                                        value={index} 
+                                        checked={parseInt(correctOption) === index}
+                                        onChange={() => setCorrectOption(index)}
+                                        className="w-5 h-5"
+                                    />
+                                </div>
+                            </div>
                         ))}
                     </div>
 
@@ -505,12 +536,17 @@ export default function AdminPage() {
                                     <button
                                         key={index}
                                         onClick={() => handleFiftyFiftyOption(index)}
-                                        className={`p-3 border-2 cursor-pointer transition-all ${fiftyFiftySelection.includes(index)
-                                            ? 'border-red-500 bg-red-900'
-                                            : 'border-gray-400 bg-gray-800'
-                                            } rounded`}
+                                        disabled={index === fiftyFiftyCorrectOption}
+                                        className={`p-3 border-2 transition-all ${
+                                            index === fiftyFiftyCorrectOption 
+                                                ? 'border-green-500 bg-green-900 cursor-not-allowed opacity-70' 
+                                                : fiftyFiftySelection.includes(index)
+                                                    ? 'border-red-500 bg-red-900 cursor-pointer'
+                                                    : 'border-gray-400 bg-gray-800 cursor-pointer'
+                                        } rounded`}
                                     >
                                         {opt || `Option ${index + 1}`}
+                                        {index === fiftyFiftyCorrectOption && <span className="ml-2 text-green-300">(Correct)</span>}
                                     </button>
                                 ))}
                             </div>
@@ -553,19 +589,13 @@ export default function AdminPage() {
                                         Pick {index + 1}
                                     </button>
                                 ))}
-                                {options.map((_, index) => (
-                                    <button
-                                        key={`c${index}`}
-                                        className={`p-2 rounded ${isOptionDisabled(index)
-                                            ? 'bg-gray-400 opacity-50 cursor-not-allowed'
-                                            : 'bg-green-500 hover:bg-green-600 active:scale-95 cursor-pointer'} transition-all`}
-                                        onClick={() => !isOptionDisabled(index) && socket.emit("mark-correct", index)}
-                                        disabled={isOptionDisabled(index)}
-                                    >
-                                        ✅ {index + 1}
-                                    </button>
-                                ))}
                             </div>
+                            <button
+                                className="w-full p-2 mt-2 rounded bg-green-500 hover:bg-green-600 active:scale-95 cursor-pointer transition-all"
+                                onClick={() => revealAnswer()}
+                            >
+                                Reveal Correct Answer
+                            </button>
                         </div>
                         <div className="lg:w-1/2">
                             <h2 className="text-lg my-4">Mixer</h2>

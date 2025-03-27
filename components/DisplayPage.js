@@ -74,8 +74,7 @@ export default function DisplayPage() {
     const [question, setQuestion] = useState({
         text: "",
         options: ["&nbsp;", "&nbsp;", "&nbsp;", "&nbsp;"],
-        correctIndex: null,
-        wrongIndex: null,
+        correctOption: null,
         selected: null,
         timer: 60,
         maxTimer: 60,
@@ -103,7 +102,10 @@ export default function DisplayPage() {
 
     useEffect(() => {
         socket.on("display-question", (data) => {
-            setQuestion(data);
+            setQuestion({
+                ...data,
+                selected: null
+            });
             setSelectedStatus({ index: null, status: "" });
             setCorrectAnswer(null);
             setTimer({ current: data.timer || 60, max: data.maxTimer || 60 });
@@ -118,7 +120,10 @@ export default function DisplayPage() {
 
         socket.on("highlight-answer", (index) => {
             setSelectedStatus({ index, status: "selected" });
-            setCorrectAnswer(null);
+            setQuestion(prev => ({
+                ...prev,
+                selected: index
+            }));
         });
 
         socket.on("mark-correct", (index) => {
@@ -148,6 +153,10 @@ export default function DisplayPage() {
         socket.on("reset-highlights", () => {
             setSelectedStatus({ index: null, status: "" });
             setCorrectAnswer(null);
+            setQuestion(prev => ({
+                ...prev,
+                selected: null
+            }));
         });
 
         socket.on("update-timer", (data) => {
@@ -178,8 +187,7 @@ export default function DisplayPage() {
             setQuestion({
                 text: "",
                 options: ["&nbsp;", "&nbsp;", "&nbsp;", "&nbsp;"],
-                correctIndex: null,
-                wrongIndex: null,
+                correctOption: null,
                 selected: null,
                 timer: 60,
                 maxTimer: 60,
@@ -316,7 +324,6 @@ export default function DisplayPage() {
     const playAudio = async (key, offset = 0) => {
         try {
             await stopAllAudio();
-            console.log(`Playing ${key} with offset ${offset}`);
             if (audioFiles[key]) {
                 audioRef.current = new Audio(audioFiles[key]);
                 if (offset > 0) {
