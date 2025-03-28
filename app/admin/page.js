@@ -27,7 +27,7 @@ export default function AdminPage() {
     const [activeLifeline, setActiveLifeline] = useState(null);
     const [fiftyFiftySelection, setFiftyFiftySelection] = useState([]);
     const [hiddenOptions, setHiddenOptions] = useState([]);
-    const [questionNumber, setQuestionNumber] = useState(1);
+    const [questionNumber, setQuestionNumber] = useState(0);
     const [fiftyFiftyCorrectOption, setFiftyFiftyCorrectOption] = useState(null);
 
     const audios = {
@@ -271,7 +271,7 @@ export default function AdminPage() {
                 const result = response.data[0];
                 setQuestion(result.text);
                 setOptions([...result.options]);
-                setCorrectOption(result.correctOption);
+                setCorrectOption(result.correctOption - 1);
                 
                 await fetch(`/api/questions/${result._id}`, {
                     method: 'PUT',

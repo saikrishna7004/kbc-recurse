@@ -22,7 +22,7 @@ let timerStarted = false;
 let highlightedOption = { index: null, type: null };
 let correctAnswer = null;
 let currentScreen = "logo";
-let questionNumber = 1;
+let questionNumber = 0;
 let answerRevealed = false;
 
 let lifelines = {
@@ -141,7 +141,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("reset-question-number", () => {
-        questionNumber = 1;
+        questionNumber = 0;
         io.emit("update-question-number", { questionNumber });
     });
 

@@ -3,8 +3,8 @@ import connectMongo from '@/utils/connectMongo';
 import Question from '@/models/Question';
 
 export async function GET(request, { params }) {
-    const { slug } = params;
-    
+    const { slug } = params; // You can keep this as it is since GET is not affected by the same issue.
+
     try {
         await connectMongo();
         const question = await Question.findById(slug);
@@ -20,7 +20,7 @@ export async function GET(request, { params }) {
 }
 
 export async function PUT(request, { params }) {
-    const { slug } = params;
+    const { slug } = await params;
     
     try {
         const body = await request.json();
@@ -43,7 +43,7 @@ export async function PUT(request, { params }) {
 }
 
 export async function DELETE(request, { params }) {
-    const { slug } = params;
+    const { slug } = await params;
     
     try {
         await connectMongo();

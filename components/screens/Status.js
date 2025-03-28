@@ -6,7 +6,7 @@ import Lifeline from './Lifeline';
 const Status = ({ prizeAmounts, questionNumber, lifelineStatus, icons }) => {
     return (
         <div className="flex left-20">
-            <div className="hidden sm:flex flex-col items-center justify-center w-3/4">
+            <div className="hidden sm:flex flex-col items-center justify-center w-3/4 overflow-hidden">
                 <motion.div
                     initial="hidden"
                     animate="visible"
@@ -16,7 +16,7 @@ const Status = ({ prizeAmounts, questionNumber, lifelineStatus, icons }) => {
                 </motion.div>
                 <Lifeline icons={icons} specificLifeline={""} lifelineStatus={lifelineStatus} />
             </div>
-            <motion.div className="flex flex-col w-full sm:w-1/2 mx-auto sm:mx-0" initial="hidden" animate="visible" variants={fadeInVariants}>
+            <motion.div className="flex flex-col w-full sm:w-1/2 mx-auto sm:mx-0 overflow-hidden" initial="hidden" animate="visible" variants={fadeInVariants}>
                 <motion.h2 
                     className="text-3xl font-bold text-yellow-400 w-full sm:w-1/2 my-3 self-start" 
                     initial={{ opacity: 0, y: -20 }} 
@@ -31,7 +31,7 @@ const Status = ({ prizeAmounts, questionNumber, lifelineStatus, icons }) => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.7 }}
                 >
-                    <div className="space-y-1 ">
+                    <div className="space-y-1">
                         {prizeAmounts.map((amount, index) => {
                             const isCurrentQuestion = index === (11 - questionNumber);
                             const isMilestone = 11-index === 4 || 11-index === 7 || 11-index === 10;
@@ -39,7 +39,7 @@ const Status = ({ prizeAmounts, questionNumber, lifelineStatus, icons }) => {
                             return (
                                 <motion.div
                                     key={index}
-                                    className={`text-xl p-2 rounded ${isCurrentQuestion
+                                    className={`text-sm p-2 rounded ${isCurrentQuestion
                                         ? "bg-yellow-500 text-black font-bold border-2 border-white"
                                         : isMilestone
                                             ? "bg-yellow-600 border border-yellow-400"
@@ -49,7 +49,7 @@ const Status = ({ prizeAmounts, questionNumber, lifelineStatus, icons }) => {
                                     animate={{
                                         opacity: 1,
                                         x: 0,
-                                        scale: isCurrentQuestion ? [1, 1.05, 1] : 1
+                                        scale: isCurrentQuestion ? [1, 1.02, 1] : 1
                                     }}
                                     transition={{
                                         delay: 0.4 + (index * 0.08),
