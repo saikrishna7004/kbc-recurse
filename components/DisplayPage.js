@@ -26,7 +26,6 @@ const audioFiles = {
 const icons = {
     '50-50': '/50-50.png',
     'Audience Poll': '/Audience Poll.png',
-    'Phone a friend': '/Phone a friend.png',
 };
 
 const LightEffect = ({ type }) => {
@@ -93,7 +92,6 @@ export default function DisplayPage() {
     const [lifelineStatus, setLifelineStatus] = useState({
         "50-50": false,
         "Audience Poll": false,
-        "Phone a friend": false
     });
     const [hiddenOptions, setHiddenOptions] = useState([]);
     const [specificLifeline, setSpecificLifeline] = useState(null);

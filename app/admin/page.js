@@ -23,7 +23,6 @@ export default function AdminPage() {
     const [lifelineStatus, setLifelineStatus] = useState({
         "50-50": false,
         "Audience Poll": false,
-        "Phone a friend": false
     });
     const [activeLifeline, setActiveLifeline] = useState(null);
     const [fiftyFiftySelection, setFiftyFiftySelection] = useState([]);
@@ -58,7 +57,6 @@ export default function AdminPage() {
     const icons = {
         '50-50': '/50-50.png',
         'Audience Poll': '/Audience Poll.png',
-        'Phone a friend': '/Phone a friend.png',
     };
 
     useEffect(() => {
